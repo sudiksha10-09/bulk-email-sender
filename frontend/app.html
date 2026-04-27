@@ -613,7 +613,7 @@ async function doLogin() {
   if (!email || !pass) { showAlert('auth-alert', 'Please enter your email and password.'); return; }
   const btn = document.getElementById('btn-login');
   btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Signing in...';
-  const res = await apiFetch('POST', '/api/auth/login', {email, password: pass});
+  const res = await apiFetch('POST', '/api/auth/login/', {email, password: pass});
   btn.disabled = false; btn.textContent = 'Sign In';
   if (res?.access_token) {
     accessToken = res.access_token;
@@ -635,7 +635,7 @@ async function doRegister() {
   if (pass !== pass2) { showAlert('auth-alert', 'Passwords do not match.'); return; }
   const btn = document.getElementById('btn-register');
   btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Creating account...';
-  const res = await apiFetch('POST', '/api/auth/register', {email, password: pass, password_confirm: pass2});
+  const res = await apiFetch('POST', '/api/auth/register/', {email, password: pass, password_confirm: pass2});
   btn.disabled = false; btn.textContent = 'Create Account';
   if (res?.message || res?.id || res?.email) {
     showAlert('auth-alert', 'Account created! Check your email to verify, then sign in.', 'success');
@@ -1309,7 +1309,7 @@ async function doForgotPassword() {
   if (!email) { showAlert('auth-alert', 'Please enter your email.'); return; }
   const btn = document.getElementById('btn-forgot');
   btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Sending...';
-  const res = await apiFetch('POST', '/api/auth/forgot-password', {email});
+  const res = await apiFetch('POST', '/api/auth/forgot-password/', {email});
   btn.disabled = false; btn.textContent = 'Send Reset Link';
   showAlert('auth-alert', res?.message || 'Reset link sent if that email exists.', 'success');
 }
@@ -1322,7 +1322,7 @@ async function doResetPassword() {
   if (password !== confirm) { showAlert('auth-alert', 'Passwords do not match.'); return; }
   const btn = document.getElementById('btn-reset');
   btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Resetting...';
-  const res = await apiFetch('POST', '/api/auth/reset-password', {token, password, password_confirm: confirm});
+  const res = await apiFetch('POST', '/api/auth/reset-password/', {token, password, password_confirm: confirm});
   btn.disabled = false; btn.textContent = 'Set New Password';
   if (res?.message) {
     showAlert('auth-alert', res.message, 'success');
@@ -1388,7 +1388,7 @@ async function doChangePassword() {
   if (newPass !== confirm) { showAlert('chpw-alert', 'New passwords do not match.'); return; }
   const btn = document.getElementById('btn-chpw');
   btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Updating...';
-  const res = await apiFetch('POST', '/api/auth/change-password', {
+  const res = await apiFetch('POST', '/api/auth/change-password/', {
     current_password: current, new_password: newPass, new_password_confirm: confirm
   });
   btn.disabled = false; btn.textContent = 'Update Password';
