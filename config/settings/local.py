@@ -19,7 +19,8 @@ CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_BROKER_URL = 'memory://'
 CELERY_RESULT_BACKEND = 'cache+memory://'
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Use SMTP backend to actually send emails (not console)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 ALLOWED_HOSTS = ['*']
 

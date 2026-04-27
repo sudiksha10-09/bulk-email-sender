@@ -3,8 +3,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, JsonResponse
 from pathlib import Path
+
+
+def health_check(request):
+    """Health check endpoint for Docker/monitoring."""
+    return JsonResponse({'status': 'healthy'}, status=200)
 
 
 def frontend_view(request):
@@ -28,6 +33,7 @@ def pricing_view(request):
 
 
 urlpatterns = [
+    path('health/', health_check, name='health'),
     path('', landing_view, name='landing'),
     path('app/', app_view, name='app'),
     path('app.html', app_view, name='app_html'),

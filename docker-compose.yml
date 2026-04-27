@@ -1,80 +1,124 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database
   db:
-    image: postgres:16-alpine
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    image: postgres:13-alpine
+    container_name: myapp-db
     environment:
-      - POSTGRES_DB=bulk_email_sender
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432"
+    networks:
+      - myapp-network
+    restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # Django Application
+  web:
+    build: .
+    container_name: myapp-web
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:9000 --workers 3 --timeout 120 
+             --access-logfile /app/logs/access.log 
+             --error-logfile /app/logs/error.log 
+             config.wsgi:application"
+    environment:
+      - DEBUG=${DEBUG}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - REDIS_URL=${REDIS_URL}
+    volumes:
+      - .:/app
+      - ./static:/app/static
+      - ./media:/app/media
+      - ./logs:/app/logs
+    ports:
+      - "9000:9000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - myapp-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis Cache
   redis:
     image: redis:7-alpine
+    container_name: myapp-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
+    networks:
+      - myapp-network
+    restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  web:
-    build: .
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - .:/app
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      - DJANGO_SETTINGS_MODULE=config.settings.development
-      - DB_HOST=db
-      - REDIS_HOST=redis
-
+  # Celery Worker
   celery:
     build: .
-    command: celery -A config worker -l info
+    container_name: myapp-celery
+    command: celery -A config worker -l info --logfile=/app/logs/celery.log
+    environment:
+      - DEBUG=${DEBUG}
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - REDIS_URL=redis://redis:6379/0
     volumes:
       - .:/app
-    env_file:
-      - .env
+      - ./logs:/app/logs
     depends_on:
       - db
       - redis
-    environment:
-      - DJANGO_SETTINGS_MODULE=config.settings.development
-      - DB_HOST=db
-      - REDIS_HOST=redis
+      - web
+    networks:
+      - myapp-network
+    restart: always
 
+  # Celery Beat
   celery-beat:
     build: .
-    command: celery -A config beat -l info
+    container_name: myapp-celery-beat
+    command: celery -A config beat -l info --logfile=/app/logs/celery-beat.log
+    environment:
+      - DEBUG=${DEBUG}
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      - REDIS_URL=redis://redis:6379/0
     volumes:
       - .:/app
-    env_file:
-      - .env
+      - ./logs:/app/logs
     depends_on:
       - db
       - redis
-    environment:
-      - DJANGO_SETTINGS_MODULE=config.settings.development
-      - DB_HOST=db
-      - REDIS_HOST=redis
+      - web
+    networks:
+      - myapp-network
+    restart: always
+
+networks:
+  myapp-network:
+    driver: bridge
 
 volumes:
   postgres_data:

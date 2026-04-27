@@ -1,9 +1,12 @@
 """Utility functions for authentication app."""
 import secrets
+import logging
 from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+
+logger = logging.getLogger(__name__)
 
 
 def generate_verification_token():
@@ -64,6 +67,7 @@ def send_verification_email(user, verification_token):
     """
     
     try:
+        logger.info(f"Attempting to send verification email to {user.email}")
         send_mail(
             subject=subject,
             message=plain_message,
@@ -72,9 +76,10 @@ def send_verification_email(user, verification_token):
             html_message=html_message,
             fail_silently=False,
         )
+        logger.info(f"Verification email sent successfully to {user.email}")
         return True
     except Exception as e:
-        # Log the error in production
+        logger.error(f"Failed to send verification email to {user.email}: {str(e)}", exc_info=True)
         print(f"Failed to send verification email to {user.email}: {str(e)}")
         return False
 
@@ -97,7 +102,10 @@ def send_password_reset_email(user, reset_token):
     plain_message = f"Reset your BulkMail password:\n\n{reset_url}\n\nIf you didn't request this, ignore this email."
 
     try:
-        send_mail(
+        logger.info(f"Attempting to send password reset email to {user.email}")
+        logger.debug(f"Email config - HOST: {settings.EMAIL_HOST}, PORT: {settings.EMAIL_PORT}, USE_TLS: {settings.EMAIL_USE_TLS}")
+        
+        result = send_mail(
             subject=subject,
             message=plain_message,
             from_email=settings.DEFAULT_FROM_EMAIL,
@@ -105,7 +113,9 @@ def send_password_reset_email(user, reset_token):
             html_message=html_message,
             fail_silently=False,
         )
+        logger.info(f"Password reset email sent successfully to {user.email}")
         return True
     except Exception as e:
+        logger.error(f"Failed to send reset email to {user.email}: {str(e)}", exc_info=True)
         print(f"Failed to send reset email to {user.email}: {e}")
         return False
