@@ -22,6 +22,10 @@ CELERY_RESULT_BACKEND = 'cache+memory://'
 # Use SMTP backend to actually send emails (not console)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
+# Allow all origins for local development
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
 ALLOWED_HOSTS = ['*']
 
 # Skip authentication entirely for local personal use

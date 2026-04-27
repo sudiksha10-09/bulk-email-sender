@@ -54,4 +54,5 @@ LOGGING = {
 }
 
 # Allow all CORS origins in development (optional, for easier testing)
-# CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True

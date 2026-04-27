@@ -277,7 +277,13 @@ SIMPLE_JWT = {
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = get_env_list('CORS_ALLOWED_ORIGINS', ['http://localhost:3000', 'http://localhost:5173'])
+CORS_ALLOWED_ORIGINS = get_env_list('CORS_ALLOWED_ORIGINS', [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:8000',
+    'http://localhost:9000',
+    'http://127.0.0.1:9000',
+])
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     'accept',

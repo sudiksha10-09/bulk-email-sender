@@ -1,4 +1,5 @@
 """Views for SMTP configuration app."""
+import logging
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -10,6 +11,8 @@ from apps.smtp_config.serializers import (
     SMTPConfigUpdateSerializer
 )
 from apps.smtp_config.utils import encrypt_password, decrypt_password, test_smtp_connection
+
+logger = logging.getLogger(__name__)
 
 
 class SMTPConfigViewSet(viewsets.ModelViewSet):
@@ -31,46 +34,60 @@ class SMTPConfigViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """Create a new SMTP configuration."""
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        # Encrypt password before saving
-        password = serializer.validated_data.pop('password')
-        encrypted_password = encrypt_password(password)
-        
-        # Create SMTP config
-        smtp_config = SMTPConfig.objects.create(
-            user=request.user,
-            encrypted_password=encrypted_password,
-            **serializer.validated_data
-        )
-        
-        # Return response
-        response_serializer = SMTPConfigSerializer(smtp_config)
-        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            
+            # Encrypt password before saving
+            password = serializer.validated_data.pop('password')
+            encrypted_password = encrypt_password(password)
+            
+            # Create SMTP config
+            smtp_config = SMTPConfig.objects.create(
+                user=request.user,
+                encrypted_password=encrypted_password,
+                **serializer.validated_data
+            )
+            
+            # Return response
+            response_serializer = SMTPConfigSerializer(smtp_config)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error(f"Error creating SMTP config: {str(e)}", exc_info=True)
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
     def update(self, request, *args, **kwargs):
         """Update an existing SMTP configuration."""
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        
-        # Handle password update if provided
-        if 'password' in serializer.validated_data:
-            password = serializer.validated_data.pop('password')
-            if password:  # Only update if password is not empty
-                instance.encrypted_password = encrypt_password(password)
-                instance.is_validated = False  # Require re-validation after password change
-        
-        # Update other fields
-        for attr, value in serializer.validated_data.items():
-            setattr(instance, attr, value)
-        
-        instance.save()
-        
-        response_serializer = SMTPConfigSerializer(instance)
-        return Response(response_serializer.data)
+        try:
+            partial = kwargs.pop('partial', False)
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            
+            # Handle password update if provided
+            if 'password' in serializer.validated_data:
+                password = serializer.validated_data.pop('password')
+                if password:  # Only update if password is not empty
+                    instance.encrypted_password = encrypt_password(password)
+                    instance.is_validated = False  # Require re-validation after password change
+            
+            # Update other fields
+            for attr, value in serializer.validated_data.items():
+                setattr(instance, attr, value)
+            
+            instance.save()
+            
+            response_serializer = SMTPConfigSerializer(instance)
+            return Response(response_serializer.data)
+        except Exception as e:
+            logger.error(f"Error updating SMTP config: {str(e)}", exc_info=True)
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
     def destroy(self, request, *args, **kwargs):
         """Delete an SMTP configuration."""
