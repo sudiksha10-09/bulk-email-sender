@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def subscribe(request):
     """
     POST /api/billing/subscribe/
@@ -100,7 +100,7 @@ def subscribe(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def cancel_subscription(request):
     """POST /api/billing/cancel/ — Cancel active subscription."""
     try:

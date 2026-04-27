@@ -2,7 +2,7 @@
 import logging
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from apps.smtp_config.models import SMTPConfig
 from apps.smtp_config.serializers import (
@@ -18,11 +18,11 @@ logger = logging.getLogger(__name__)
 class SMTPConfigViewSet(viewsets.ModelViewSet):
     """ViewSet for SMTP configuration CRUD operations."""
     
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     
     def get_queryset(self):
-        """Return SMTP configs for the current user only."""
-        return SMTPConfig.objects.filter(user=self.request.user).order_by('-created_at')
+        """Return all SMTP configs (no user filtering)."""
+        return SMTPConfig.objects.all().order_by('-created_at')
     
     def get_serializer_class(self):
         """Return appropriate serializer based on action."""
@@ -44,7 +44,7 @@ class SMTPConfigViewSet(viewsets.ModelViewSet):
             
             # Create SMTP config
             smtp_config = SMTPConfig.objects.create(
-                user=request.user,
+                user=None,  # No user required
                 encrypted_password=encrypted_password,
                 **serializer.validated_data
             )

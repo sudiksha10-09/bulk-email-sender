@@ -1,7 +1,7 @@
 """Views for campaigns app."""
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from django.utils import timezone
@@ -17,11 +17,11 @@ from apps.campaigns.serializers import (
 class CampaignViewSet(viewsets.ModelViewSet):
     """ViewSet for campaign CRUD and activation."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get_queryset(self):
-        return Campaign.objects.filter(user=self.request.user).order_by('-created_at')
+        return Campaign.objects.all().order_by('-created_at')
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -37,7 +37,7 @@ class CampaignViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         campaign = serializer.save(
-            user=request.user,
+            user=None,  # No user required
             status='scheduled' if serializer.validated_data.get('scheduled_at') else 'draft',
             total_recipients=serializer.validated_data['recipient_list'].valid_count,
         )

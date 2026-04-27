@@ -36,9 +36,12 @@ def register(request):
         # Send verification email
         email_sent = send_verification_email(user, verification_token)
 
-        # In local/dev mode (console email backend), auto-verify so users can log in immediately
+        # Auto-verify in development/testing modes OR if email backend is console
         from django.conf import settings
-        if getattr(settings, 'EMAIL_BACKEND', '').endswith('console.EmailBackend'):
+        email_backend = getattr(settings, 'EMAIL_BACKEND', '')
+        is_dev_mode = email_backend.endswith('console.EmailBackend') or email_backend.endswith('locmem.EmailBackend')
+        
+        if is_dev_mode:
             user.is_email_verified = True
             user.email_verification_token = None
             user.save()

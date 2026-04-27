@@ -2,12 +2,12 @@
 import time
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def generate_subjects(request):
     """
     POST /api/ai/generate-subjects
@@ -44,7 +44,7 @@ def generate_subjects(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def spam_check(request):
     """
     POST /api/ai/spam-check
@@ -76,7 +76,7 @@ def spam_check(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def personalize(request):
     """
     POST /api/ai/personalize
@@ -93,7 +93,7 @@ def personalize(request):
         return Response({'error': 'template_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        template = Template.objects.get(id=template_id, user=request.user)
+        template = Template.objects.get(id=template_id)
     except Template.DoesNotExist:
         return Response({'error': 'Template not found'}, status=status.HTTP_404_NOT_FOUND)
 

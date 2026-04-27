@@ -36,7 +36,7 @@
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
 
 /* ── Auth screens ── */
-#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:var(--bg)}
+#auth-screen{display:none;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:var(--bg)}
 .auth-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px;width:100%;max-width:420px;box-shadow:var(--shadow)}
 .auth-logo{font-size:28px;font-weight:800;color:#38bdf8;text-align:center;margin-bottom:6px}
 .auth-tagline{text-align:center;color:var(--text-dim);font-size:14px;margin-bottom:28px}
@@ -286,7 +286,6 @@ tr:hover td{background:var(--table-hover)}
     <div class="logo">📧 BulkMail</div>
     <div class="user-bar">
       <span class="user-email" id="sidebar-email">—</span>
-      <button class="btn-link" onclick="doLogout()" title="Sign out">↩</button>
     </div>
     <div class="nav">
       <div class="nav-item active" onclick="nav('send')" id="nav-send">🚀 Quick Send</div>
@@ -526,7 +525,7 @@ let quill = null;
 async function apiFetch(method, path, body=null, isForm=false) {
   const headers = {};
   if (!isForm) headers['Content-Type'] = 'application/json';
-  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+  // No auth required - app runs without authentication
   const opts = {method, headers, timeout: 30000};
   if (body) opts.body = isForm ? body : JSON.stringify(body);
   try {
@@ -534,12 +533,6 @@ async function apiFetch(method, path, body=null, isForm=false) {
     
     // Handle 204 No Content
     if (res.status === 204) return {};
-    
-    // Handle 401 Unauthorized
-    if (res.status === 401) { 
-      doLogout(); 
-      return {error: 'Session expired. Please sign in again.'}; 
-    }
     
     // Check content type
     const contentType = res.headers.get('content-type');
@@ -608,73 +601,33 @@ function switchAuthTab(tab) {
 }
 
 async function doLogin() {
-  const email = document.getElementById('l-email').value.trim();
-  const pass = document.getElementById('l-pass').value;
-  if (!email || !pass) { showAlert('auth-alert', 'Please enter your email and password.'); return; }
-  const btn = document.getElementById('btn-login');
-  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Signing in...';
-  const res = await apiFetch('POST', '/api/auth/login/', {email, password: pass});
-  btn.disabled = false; btn.textContent = 'Sign In';
-  if (res?.access_token) {
-    accessToken = res.access_token;
-    localStorage.setItem('access_token', accessToken);
-    const userEmail = res?.user?.email || email;
-    localStorage.setItem('user_email', userEmail);
-    currentUser = {email: userEmail};
-    enterApp();
-  } else {
-    showAlert('auth-alert', res?.error || res?.detail || 'Invalid email or password.');
-  }
+  // Login disabled - app runs without auth
+  console.log('Login disabled - app runs without authentication');
 }
 
 async function doRegister() {
-  const email = document.getElementById('r-email').value.trim();
-  const pass = document.getElementById('r-pass').value;
-  const pass2 = document.getElementById('r-pass2').value;
-  if (!email || !pass) { showAlert('auth-alert', 'Please fill in all fields.'); return; }
-  if (pass !== pass2) { showAlert('auth-alert', 'Passwords do not match.'); return; }
-  const btn = document.getElementById('btn-register');
-  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Creating account...';
-  const res = await apiFetch('POST', '/api/auth/register/', {email, password: pass, password_confirm: pass2});
-  btn.disabled = false; btn.textContent = 'Create Account';
-  if (res?.message || res?.id || res?.email) {
-    showAlert('auth-alert', 'Account created! Check your email to verify, then sign in.', 'success');
-    setTimeout(() => switchAuthTab('login'), 2000);
-  } else {
-    const msg = res?.error || res?.email?.[0] || res?.password?.[0] || JSON.stringify(res);
-    showAlert('auth-alert', msg);
-  }
+  // Registration disabled - app runs without auth
+  console.log('Registration disabled - app runs without authentication');
 }
 
 function doLogout() {
-  accessToken = null;
-  localStorage.removeItem('access_token');
-  currentUser = null;
-  document.getElementById('app-screen').style.display = 'none';
-  document.getElementById('auth-screen').style.display = 'flex';
-  document.getElementById('l-email').value = '';
-  document.getElementById('l-pass').value = '';
+  // Logout disabled - app runs without auth
+  console.log('Logout disabled - app runs without authentication');
 }
 
 function enterApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
-  document.getElementById('sidebar-email').textContent = currentUser?.email || localStorage.getItem('user_email') || '';
+  document.getElementById('sidebar-email').textContent = currentUser?.email || localStorage.getItem('user_email') || 'user@bulkmail.local';
   if (!quill) initQuill();
   loadSMTPForStep();
   loadRListForStep();
 }
 
-// Auto-login if token exists
-if (accessToken) {
-  // Verify token is still valid by fetching user data
-  apiFetch('GET', '/api/smtp-configs/').then(res => {
-    if (res?.error === 'Session expired. Please sign in again.') return;
-    // Token valid — try to get email from stored data
-    currentUser = {email: localStorage.getItem('user_email') || ''};
-    enterApp();
-  });
-}
+// Auto-load app (no auth required)
+currentUser = {email: 'user@bulkmail.local'};
+localStorage.setItem('user_email', 'user@bulkmail.local');
+enterApp();
 </script>
 
 <script>

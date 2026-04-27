@@ -1,7 +1,7 @@
 """Views for recipients app."""
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from apps.recipients.models import RecipientList, Recipient
@@ -16,12 +16,12 @@ from apps.recipients.utils import parse_csv_file, process_csv_recipients
 class RecipientListViewSet(viewsets.ModelViewSet):
     """ViewSet for recipient list CRUD operations."""
     
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     
     def get_queryset(self):
-        """Return recipient lists for the current user only."""
-        return RecipientList.objects.filter(user=self.request.user).order_by('-created_at')
+        """Return all recipient lists (no user filtering)."""
+        return RecipientList.objects.all().order_by('-created_at')
     
     def get_serializer_class(self):
         """Return appropriate serializer based on action."""
@@ -60,7 +60,7 @@ class RecipientListViewSet(viewsets.ModelViewSet):
         
         # Create recipient list
         recipient_list = RecipientList.objects.create(
-            user=request.user,
+            user=None,  # No user required
             name=name,
             csv_file_url=f"local://{csv_file.name}",  # For MVP, store filename; later use S3
             status='processing'

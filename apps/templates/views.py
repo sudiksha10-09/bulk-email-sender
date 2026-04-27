@@ -1,7 +1,7 @@
 """Views for templates app."""
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from apps.templates.models import Template
 from apps.templates.serializers import (
@@ -17,10 +17,10 @@ from apps.templates.serializers import (
 class TemplateViewSet(viewsets.ModelViewSet):
     """ViewSet for email template CRUD operations."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return Template.objects.filter(user=self.request.user).order_by('-created_at')
+        return Template.objects.all().order_by('-created_at')
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -41,7 +41,7 @@ class TemplateViewSet(viewsets.ModelViewSet):
         if not serializer.is_valid():
             logger.error(f"Template validation errors: {serializer.errors}")
         serializer.is_valid(raise_exception=True)
-        template = serializer.save(user=request.user)
+        template = serializer.save(user=None)  # No user required
         return Response(TemplateSerializer(template).data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
@@ -86,7 +86,7 @@ class TemplateViewSet(viewsets.ModelViewSet):
         """
         original = self.get_object()
         duplicate = Template.objects.create(
-            user=request.user,
+            user=None,  # No user required
             name=f"Copy of {original.name}",
             subject=original.subject,
             body=original.body,
