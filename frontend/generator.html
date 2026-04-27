@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Cold Email Generator — BulkMail</title>
+<style>
+:root,[data-theme="dark"]{
+  --bg:#0f172a;--surface:#1e293b;--surface2:#0a1628;
+  --border:#334155;--text:#e2e8f0;--text-muted:#94a3b8;--text-dim:#64748b;--text-faint:#475569;
+  --input-bg:#0f172a;--input-border:#334155;--card:#1e293b;
+}
+[data-theme="light"]{
+  --bg:#f8fafc;--surface:#ffffff;--surface2:#f1f5f9;
+  --border:#e2e8f0;--text:#1e293b;--text-muted:#475569;--text-dim:#64748b;--text-faint:#94a3b8;
+  --input-bg:#ffffff;--input-border:#cbd5e1;--card:#ffffff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+a{color:#38bdf8;text-decoration:none}
+
+/* Nav */
+nav{display:flex;align-items:center;justify-content:space-between;padding:16px 40px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:50}
+.nav-logo{font-size:18px;font-weight:800;color:#38bdf8}
+.nav-right{display:flex;align-items:center;gap:12px}
+.theme-btn{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:12px;color:var(--text-muted);transition:.2s}
+.theme-btn:hover{border-color:#38bdf8;color:#38bdf8}
+
+/* Layout */
+.container{max-width:1100px;margin:0 auto;padding:32px 24px;display:grid;grid-template-columns:380px 1fr;gap:28px;align-items:start}
+@media(max-width:800px){.container{grid-template-columns:1fr}}
+
+/* Form panel */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px}
+.panel-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.form-group{margin-bottom:16px}
+label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+input,select,textarea{width:100%;background:var(--input-bg);border:1px solid var(--input-border);border-radius:8px;padding:10px 13px;color:var(--text);font-size:14px;outline:none;transition:.15s;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.1)}
+input::placeholder,textarea::placeholder{color:var(--text-faint)}
+textarea{resize:vertical;min-height:90px;line-height:1.6}
+select option{background:var(--surface)}
+.hint{font-size:12px;color:var(--text-faint);margin-top:5px}
+
+/* Tone selector */
+.tone-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tone-opt{border:1px solid var(--border);border-radius:8px;padding:10px 8px;text-align:center;cursor:pointer;transition:.15s;font-size:13px;color:var(--text-muted)}
+.tone-opt:hover{border-color:#38bdf8;color:#38bdf8}
+.tone-opt.active{border-color:#38bdf8;background:rgba(56,189,248,.08);color:#38bdf8;font-weight:600}
+.tone-icon{font-size:18px;display:block;margin-bottom:4px}
+
+/* Buttons */
+.btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:7px}
+.btn-primary{background:#38bdf8;color:#0f172a;width:100%;justify-content:center}.btn-primary:hover{background:#7dd3fc}
+.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}.btn-ghost:hover{border-color:#38bdf8;color:#38bdf8}
+.btn-success{background:#10b981;color:#fff}.btn-success:hover{background:#059669}
+.btn-sm{padding:6px 12px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.spinner{width:15px;height:15px;border:2px solid rgba(15,23,42,.3);border-top-color:#0f172a;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Results panel */
+.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:gap}
+.results-count{font-size:13px;color:var(--text-dim)}
+.email-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px;transition:.15s}
+.email-card:hover{border-color:#334155}
+.email-company{font-size:13px;font-weight:700;color:#38bdf8;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.email-subject{font-size:14px;font-weight:600;color:var(--text);margin-bottom:10px}
+.email-body{font-size:13px;color:var(--text-muted);line-height:1.7;white-space:pre-wrap;background:var(--surface2);border-radius:8px;padding:14px;max-height:200px;overflow-y:auto}
+.email-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.copy-btn{font-size:12px;padding:5px 10px}
+
+/* Alert */
+.alert{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;line-height:1.5}
+.alert-error{background:#450a0a;border:1px solid #7f1d1d;color:#fca5a5}
+.alert-info{background:#1e3a5f;border:1px solid #1d4ed8;color:#93c5fd}
+.alert-success{background:#064e3b;border:1px solid #065f46;color:#6ee7b7}
+
+/* Empty */
+.empty{text-align:center;padding:60px 20px;color:var(--text-faint)}
+.empty-icon{font-size:48px;margin-bottom:14px}
+.empty p{font-size:15px;margin-bottom:8px;color:var(--text-dim)}
+.empty small{font-size:13px}
+
+/* Mode badge */
+.mode-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.mode-demo{background:#451a03;color:#fbbf24}
+.mode-ai{background:#064e3b;color:#34d399}
+
+/* Company tags */
+.tag-input-wrap{display:flex;flex-wrap:wrap;gap:6px;background:var(--input-bg);border:1px solid var(--input-border);border-radius:8px;padding:8px;min-height:44px;cursor:text}
+.tag-input-wrap:focus-within{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.1)}
+.tag{background:#1e3a5f;color:#60a5fa;border-radius:6px;padding:3px 8px;font-size:12px;display:flex;align-items:center;gap:4px}
+.tag-remove{cursor:pointer;opacity:.7;font-size:14px;line-height:1}.tag-remove:hover{opacity:1}
+.tag-input{border:none;outline:none;background:transparent;color:var(--text);font-size:14px;min-width:120px;flex:1;padding:2px 4px}
+.tag-input::placeholder{color:var(--text-faint)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div style="display:flex;align-items:center;gap:16px">
+    <a href="/" class="nav-logo">📧 BulkMail</a>
+    <span style="color:var(--border);font-size:18px">|</span>
+    <span style="font-size:14px;color:var(--text-muted)">✉️ Cold Email Generator</span>
+  </div>
+  <div class="nav-right">
+    <button onclick="toggleTheme()" id="theme-btn" class="theme-btn">☀ Light</button>
+    <a href="/app/" class="btn btn-ghost btn-sm">← Back to App</a>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- LEFT: Input form -->
+  <div>
+    <div class="panel">
+      <div class="panel-title">🎯 Your Profile</div>
+
+      <div id="form-alert"></div>
+
+      <div class="form-group">
+        <label>Your Role</label>
+        <input id="role" placeholder="e.g. Frontend Developer, Backend Engineer" />
+      </div>
+
+      <div class="form-group">
+        <label>Skills <span style="color:var(--text-faint);text-transform:none;letter-spacing:0">(comma separated)</span></label>
+        <input id="skills" placeholder="React, TypeScript, Node.js, PostgreSQL" />
+      </div>
+
+      <div class="form-group">
+        <label>Experience <span style="color:var(--text-faint);text-transform:none;letter-spacing:0">(optional)</span></label>
+        <input id="experience" placeholder="2 years, fresher, 6 months..." />
+      </div>
+
+      <div class="form-group">
+        <label>Goal</label>
+        <select id="goal">
+          <option value="job">Full-time Job</option>
+          <option value="freelance">Freelance / Contract</option>
+          <option value="collab">Collaboration / Open Source</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Tone</label>
+        <div class="tone-grid">
+          <div class="tone-opt active" data-tone="professional" onclick="setTone(this)">
+            <span class="tone-icon">💼</span>Professional
+          </div>
+          <div class="tone-opt" data-tone="friendly" onclick="setTone(this)">
+            <span class="tone-icon">😊</span>Friendly
+          </div>
+          <div class="tone-opt" data-tone="concise" onclick="setTone(this)">
+            <span class="tone-icon">⚡</span>Concise
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Target Companies</label>
+        <div class="tag-input-wrap" id="tag-wrap" onclick="document.getElementById('company-input').focus()">
+          <input id="company-input" class="tag-input" placeholder="Type company name, press Enter..." onkeydown="handleTagInput(event)"/>
+        </div>
+        <div class="hint">Press Enter or comma to add. Max 50 companies.</div>
+      </div>
+
+      <button class="btn btn-primary" onclick="generateEmails()" id="btn-generate">
+        ✨ Generate Cold Emails
+      </button>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-title" style="margin-bottom:12px">💡 Tips</div>
+      <ul style="font-size:13px;color:var(--text-dim);line-height:2;padding-left:16px">
+        <li>Add 5–20 companies for best results</li>
+        <li>Be specific with skills — "React 18" beats "JavaScript"</li>
+        <li>Use Concise tone for cold outreach to busy founders</li>
+        <li>Download CSV → import into BulkMail to send at scale</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- RIGHT: Results -->
+  <div id="results-panel">
+    <div class="empty">
+      <div class="empty-icon">✉️</div>
+      <p>Your personalized emails will appear here</p>
+      <small>Fill in your profile and add target companies to get started</small>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Theme ────────────────────────────────────────────────
+let isLight = localStorage.getItem('theme') === 'light';
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', isLight ? 'light' : 'dark');
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = isLight ? '🌙 Dark' : '☀ Light';
+}
+function toggleTheme() {
+  isLight = !isLight;
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  applyTheme();
+}
+applyTheme();
+
+// ── Tone selector ────────────────────────────────────────
+let selectedTone = 'professional';
+function setTone(el) {
+  document.querySelectorAll('.tone-opt').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+  selectedTone = el.dataset.tone;
+}
+
+// ── Company tag input ────────────────────────────────────
+let companies = [];
+
+function handleTagInput(e) {
+  const input = document.getElementById('company-input');
+  const val = input.value.trim().replace(/,$/, '');
+  if ((e.key === 'Enter' || e.key === ',') && val) {
+    e.preventDefault();
+    addCompany(val);
+    input.value = '';
+  } else if (e.key === 'Backspace' && !input.value && companies.length) {
+    removeCompany(companies.length - 1);
+  }
+}
+
+function addCompany(name) {
+  if (companies.length >= 50) return;
+  const clean = name.trim();
+  if (!clean || companies.includes(clean)) return;
+  companies.push(clean);
+  renderTags();
+}
+
+function removeCompany(idx) {
+  companies.splice(idx, 1);
+  renderTags();
+}
+
+function renderTags() {
+  const wrap = document.getElementById('tag-wrap');
+  const input = document.getElementById('company-input');
+  wrap.innerHTML = '';
+  companies.forEach((c, i) => {
+    const tag = document.createElement('div');
+    tag.className = 'tag';
+    tag.innerHTML = `${c} <span class="tag-remove" onclick="removeCompany(${i})">×</span>`;
+    wrap.appendChild(tag);
+  });
+  wrap.appendChild(input);
+  input.placeholder = companies.length ? 'Add more...' : 'Type company name, press Enter...';
+}
+
+// ── Generate ─────────────────────────────────────────────
+let generatedEmails = [];
+
+async function generateEmails() {
+  const role = document.getElementById('role').value.trim();
+  const skills = document.getElementById('skills').value.trim();
+  const experience = document.getElementById('experience').value.trim();
+  const goal = document.getElementById('goal').value;
+
+  if (!role) { showFormAlert('Please enter your role.'); return; }
+  if (!skills) { showFormAlert('Please enter your skills.'); return; }
+  if (!companies.length) { showFormAlert('Please add at least one target company.'); return; }
+
+  const btn = document.getElementById('btn-generate');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Generating...';
+  clearFormAlert();
+
+  showLoading();
+
+  try {
+    const res = await fetch('/generator/api/generate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({role, skills, experience, companies, tone: selectedTone, goal}),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      showFormAlert(data.error);
+      showEmpty();
+    } else {
+      generatedEmails = data.emails;
+      renderResults(data.emails, data.mode);
+    }
+  } catch(e) {
+    showFormAlert('Network error. Is the server running?');
+    showEmpty();
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '✨ Generate Cold Emails';
+}
+
+function renderResults(emails, mode) {
+  const modeLabel = mode === 'ai'
+    ? '<span class="mode-badge mode-ai">✨ AI Generated</span>'
+    : '<span class="mode-badge mode-demo">📝 Template Mode — add ANTHROPIC_API_KEY for AI</span>';
+
+  const cards = emails.map((e, i) => `
+    <div class="email-card" id="card-${i}">
+      <div class="email-company">🏢 ${e.company}</div>
+      <div class="email-subject">📌 ${e.subject}</div>
+      <div class="email-body">${escHtml(e.body)}</div>
+      <div class="email-actions">
+        <button class="btn btn-ghost btn-sm copy-btn" onclick="copyEmail(${i})">📋 Copy</button>
+        <button class="btn btn-ghost btn-sm copy-btn" onclick="copySubject(${i})">Copy Subject</button>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('results-panel').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <div>
+        <span style="font-size:16px;font-weight:700;color:var(--text)">${emails.length} emails generated</span>
+        <span style="margin-left:10px">${modeLabel}</span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="regenerate()">🔄 Regenerate</button>
+        <button class="btn btn-success btn-sm" onclick="downloadCSV()">⬇ Download CSV</button>
+      </div>
+    </div>
+    <div id="email-cards">${cards}</div>`;
+}
+
+function copyEmail(i) {
+  const e = generatedEmails[i];
+  navigator.clipboard.writeText(`Subject: ${e.subject}\n\n${e.body}`);
+  const btn = document.querySelector(`#card-${i} .copy-btn`);
+  const orig = btn.textContent;
+  btn.textContent = '✅ Copied!';
+  setTimeout(() => btn.textContent = orig, 1500);
+}
+
+function copySubject(i) {
+  navigator.clipboard.writeText(generatedEmails[i].subject);
+}
+
+async function downloadCSV() {
+  if (!generatedEmails.length) return;
+  const res = await fetch('/generator/api/export', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({emails: generatedEmails}),
+  });
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'cold_emails.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function regenerate() {
+  generatedEmails = [];
+  generateEmails();
+}
+
+// ── Helpers ──────────────────────────────────────────────
+function showLoading() {
+  document.getElementById('results-panel').innerHTML = `
+    <div style="text-align:center;padding:60px 20px;color:var(--text-dim)">
+      <div style="font-size:32px;margin-bottom:16px">✉️</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px">
+        <div class="spinner" style="border-top-color:#38bdf8;border-color:var(--border)"></div>
+        Writing personalized emails for ${companies.length} companies...
+      </div>
+    </div>`;
+}
+
+function showEmpty() {
+  document.getElementById('results-panel').innerHTML = `
+    <div class="empty">
+      <div class="empty-icon">✉️</div>
+      <p>Your personalized emails will appear here</p>
+      <small>Fill in your profile and add target companies to get started</small>
+    </div>`;
+}
+
+function showFormAlert(msg) {
+  document.getElementById('form-alert').innerHTML = `<div class="alert alert-error">${msg}</div>`;
+}
+function clearFormAlert() {
+  document.getElementById('form-alert').innerHTML = '';
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

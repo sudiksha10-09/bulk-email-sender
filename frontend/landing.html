@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>BulkMail — Send Cold Emails at Scale</title>
+<style>
+/* ══ THEME VARIABLES ══════════════════════════════════════ */
+:root,[data-theme="dark"]{
+  --bg:#0f172a;--surface:#1e293b;--surface2:#0a1628;
+  --border:#1e293b;--border2:#334155;
+  --text:#e2e8f0;--text-muted:#94a3b8;--text-dim:#64748b;--text-faint:#475569;
+  --nav-bg:#0f172a;--card-bg:#1e293b;
+  --plan-bg:#1e293b;--plan-popular-bg:#0f2744;
+  --feature-bg:#1e293b;--how-bg:#0a1628;
+  --cta-bg:linear-gradient(135deg,#0f2744 0%,#0f172a 100%);
+  --footer-border:#1e293b;
+}
+[data-theme="light"]{
+  --bg:#f8fafc;--surface:#ffffff;--surface2:#f1f5f9;
+  --border:#f1f5f9;--border2:#e2e8f0;
+  --text:#1e293b;--text-muted:#475569;--text-dim:#64748b;--text-faint:#94a3b8;
+  --nav-bg:#ffffff;--card-bg:#ffffff;
+  --plan-bg:#ffffff;--plan-popular-bg:#eff6ff;
+  --feature-bg:#ffffff;--how-bg:#f1f5f9;
+  --cta-bg:linear-gradient(135deg,#eff6ff 0%,#f8fafc 100%);
+  --footer-border:#e2e8f0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);transition:background .2s,color .2s}
+a{color:inherit;text-decoration:none}
+
+/* Nav */
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 60px;border-bottom:1px solid var(--border2);position:sticky;top:0;background:var(--nav-bg);z-index:50;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.nav-logo{font-size:20px;font-weight:800;color:#38bdf8}
+.nav-links{display:flex;align-items:center;gap:28px;font-size:14px;color:var(--text-muted)}
+.nav-links a:hover{color:var(--text)}
+.nav-cta{display:flex;gap:10px;align-items:center}
+.btn{padding:9px 20px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:#38bdf8;color:#0f172a}.btn-primary:hover{background:#7dd3fc}
+.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border2)}.btn-ghost:hover{border-color:#38bdf8;color:#38bdf8}
+.theme-btn{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:6px 12px;cursor:pointer;font-size:12px;color:var(--text-muted);transition:.2s}
+.theme-btn:hover{border-color:#38bdf8;color:#38bdf8}
+@media(max-width:640px){nav{padding:16px 20px}.nav-links{display:none}}
+
+/* Hero */
+.hero{text-align:center;padding:100px 20px 80px;max-width:800px;margin:0 auto}
+.hero-badge{display:inline-block;background:#1e3a5f;border:1px solid #1d4ed8;color:#93c5fd;font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;margin-bottom:24px;letter-spacing:.5px}
+.hero h1{font-size:clamp(36px,6vw,64px);font-weight:800;line-height:1.1;color:var(--text);margin-bottom:20px}
+.hero h1 span{color:#38bdf8}
+.hero p{font-size:18px;color:var(--text-muted);line-height:1.7;max-width:560px;margin:0 auto 36px}
+.hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.btn-lg{padding:14px 32px;font-size:16px;border-radius:10px}
+.hero-note{margin-top:16px;font-size:13px;color:var(--text-faint)}
+
+/* Social proof */
+.social-proof{text-align:center;padding:20px;color:var(--text-faint);font-size:13px;border-top:1px solid var(--border2);border-bottom:1px solid var(--border2);background:var(--surface2)}
+.social-proof span{color:var(--text-dim);margin:0 16px}
+
+/* Features */
+.features{padding:80px 60px;max-width:1100px;margin:0 auto}
+@media(max-width:640px){.features{padding:60px 20px}}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:900px){.features-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.features-grid{grid-template-columns:1fr}}
+.feature-card{background:var(--feature-bg);border:1px solid var(--border2);border-radius:14px;padding:24px}
+.feature-icon{font-size:28px;margin-bottom:12px}
+.feature-card h3{font-size:15px;font-weight:700;color:var(--text);margin-bottom:8px}
+.feature-card p{font-size:13px;color:var(--text-dim);line-height:1.6}
+.section-label{text-align:center;font-size:12px;font-weight:700;color:#38bdf8;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px}
+.section-title{text-align:center;font-size:clamp(24px,4vw,36px);font-weight:800;color:var(--text);margin-bottom:12px}
+.section-sub{text-align:center;color:var(--text-dim);font-size:15px;margin-bottom:48px}
+
+/* How it works */
+.how{padding:80px 60px;background:var(--how-bg);border-top:1px solid var(--border2);border-bottom:1px solid var(--border2)}
+@media(max-width:640px){.how{padding:60px 20px}}
+.steps-row{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;max-width:900px;margin:0 auto}
+@media(max-width:700px){.steps-row{grid-template-columns:repeat(2,1fr)}}
+.how-step{text-align:center;padding:20px}
+.how-num{width:44px;height:44px;border-radius:50%;background:#1e3a5f;border:2px solid #1d4ed8;color:#60a5fa;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.how-step h4{font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px}
+.how-step p{font-size:13px;color:var(--text-dim);line-height:1.5}
+
+/* Pricing */
+#pricing{padding:80px 60px;background:var(--bg)}
+@media(max-width:640px){#pricing{padding:60px 20px}}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:900px;margin:0 auto}
+@media(max-width:700px){.pricing-grid{grid-template-columns:1fr;max-width:380px}}
+.plan{background:var(--plan-bg);border:1px solid var(--border2);border-radius:16px;padding:28px;position:relative}
+.plan.popular{border-color:#38bdf8;background:var(--plan-popular-bg)}
+.plan-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#38bdf8;color:#0f172a;font-size:11px;font-weight:700;padding:4px 14px;border-radius:20px;white-space:nowrap}
+.plan-name{font-size:14px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.plan-price{font-size:42px;font-weight:800;color:var(--text);margin-bottom:4px}
+.plan-price span{font-size:16px;color:var(--text-dim);font-weight:400}
+.plan-desc{font-size:13px;color:var(--text-dim);margin-bottom:24px}
+.plan-features{list-style:none;margin-bottom:28px}
+.plan-features li{font-size:13px;color:var(--text-muted);padding:6px 0;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:8px}
+.plan-features li:last-child{border-bottom:none}
+.plan-features li::before{content:'✓';color:#34d399;font-weight:700;flex-shrink:0}
+.plan-features li.no::before{content:'✗';color:var(--text-faint)}
+.plan-features li.no{color:var(--text-faint)}
+
+/* CTA */
+.cta-section{text-align:center;padding:80px 20px;background:var(--cta-bg);border-top:1px solid var(--border2)}
+.cta-section h2{font-size:clamp(24px,4vw,40px);font-weight:800;color:var(--text);margin-bottom:14px}
+.cta-section p{color:var(--text-dim);font-size:16px;margin-bottom:32px}
+
+/* Footer */
+footer{padding:32px 60px;border-top:1px solid var(--footer-border);display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--text-faint);background:var(--nav-bg)}
+@media(max-width:640px){footer{padding:24px 20px;flex-direction:column;gap:12px;text-align:center}}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-logo">📧 BulkMail</div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="app.html">Sign In</a>
+  </div>
+  <div class="nav-cta">
+    <button onclick="toggleTheme()" id="theme-btn" class="theme-btn">☀ Light</button>
+    <a href="app.html" class="btn btn-ghost">Sign In</a>
+    <a href="app.html#register" class="btn btn-primary">Start Free →</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-badge">🚀 No AI fluff — just reliable email sending</div>
+  <h1>Send cold emails<br/><span>at scale, without the headache</span></h1>
+  <p>Upload your CSV, connect your SMTP, write your email, and send to thousands of contacts. Track opens, clicks, and bounces in real time.</p>
+  <div class="hero-btns">
+    <a href="app.html#register" class="btn btn-primary btn-lg">Get Started Free →</a>
+    <a href="#features" class="btn btn-ghost btn-lg">See Features</a>
+  </div>
+  <div class="hero-note">No credit card required · Free plan includes 500 emails/month</div>
+</section>
+
+<!-- Social proof bar -->
+<div class="social-proof">
+  <span>✅ Works with Gmail</span>
+  <span>✅ Works with SendGrid</span>
+  <span>✅ Works with Mailgun</span>
+  <span>✅ Any custom SMTP</span>
+</div>
+
+<!-- Features -->
+<section class="features" id="features">
+  <div class="section-label">Features</div>
+  <div class="section-title">Everything you need to run outreach</div>
+  <div class="section-sub">No bloat. No AI upsells. Just the tools that matter.</div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📤</div>
+      <h3>CSV Upload</h3>
+      <p>Upload any CSV with an email column. Extra columns like name and company become personalization variables automatically.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">✉️</div>
+      <h3>{{Variable}} Personalization</h3>
+      <p>Use <code style="background:#0f172a;padding:2px 6px;border-radius:4px;font-size:12px">{{name}}</code> and <code style="background:#0f172a;padding:2px 6px;border-radius:4px;font-size:12px">{{company}}</code> in your subject and body. Replaced per recipient from your CSV.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚙️</div>
+      <h3>Bring Your Own SMTP</h3>
+      <p>Connect Gmail, SendGrid, Mailgun, or any custom SMTP. Credentials are encrypted at rest. Test before you send.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Open & Click Tracking</h3>
+      <p>See who opened your email and which links they clicked. Real-time open rate, click rate, and bounce rate per campaign.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>1000+ Emails/Minute</h3>
+      <p>Async sending via Celery workers. Campaigns run in the background — no waiting, no timeouts. Automatic retry on failure.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👥</div>
+      <h3>Multi-User Accounts</h3>
+      <p>Each user has their own SMTP configs, recipient lists, templates, and campaigns. Invite your team or share with clients.</p>
+    </div>
+  </div>
+</section>
+
+<!-- How it works -->
+<section class="how">
+  <div class="section-label">How It Works</div>
+  <div class="section-title">Send your first campaign in 4 steps</div>
+  <div class="section-sub" style="margin-bottom:40px">Takes about 5 minutes</div>
+  <div class="steps-row">
+    <div class="how-step">
+      <div class="how-num">1</div>
+      <h4>Connect SMTP</h4>
+      <p>Add your Gmail app password or SendGrid API key. We test it before saving.</p>
+    </div>
+    <div class="how-step">
+      <div class="how-num">2</div>
+      <h4>Upload CSV</h4>
+      <p>Drop your contact list. We validate emails, remove duplicates, and extract metadata.</p>
+    </div>
+    <div class="how-step">
+      <div class="how-num">3</div>
+      <h4>Write Email</h4>
+      <p>Use the rich editor. Add {{variables}} for personalization. Preview before sending.</p>
+    </div>
+    <div class="how-step">
+      <div class="how-num">4</div>
+      <h4>Send & Track</h4>
+      <p>Hit send. Watch opens and clicks roll in on your analytics dashboard.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section id="pricing">
+  <div class="section-label">Pricing</div>
+  <div class="section-title">Simple, honest pricing</div>
+  <div class="section-sub">No per-email fees. No surprise charges.</div>
+  <div class="pricing-grid">
+
+    <div class="plan">
+      <div class="plan-name">Free</div>
+      <div class="plan-price">$0<span>/mo</span></div>
+      <div class="plan-desc">Perfect for testing and small lists</div>
+      <ul class="plan-features">
+        <li>500 emails / month</li>
+        <li>1 SMTP config</li>
+        <li>3 recipient lists</li>
+        <li>Open & click tracking</li>
+        <li class="no">Scheduled campaigns</li>
+        <li class="no">Priority support</li>
+      </ul>
+      <a href="app.html#register" class="btn btn-ghost" style="width:100%;justify-content:center">Get Started</a>
+    </div>
+
+    <div class="plan popular">
+      <div class="plan-badge">Most Popular</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price">$29<span>/mo</span></div>
+      <div class="plan-desc">For serious outreach campaigns</div>
+      <ul class="plan-features">
+        <li>50,000 emails / month</li>
+        <li>Unlimited SMTP configs</li>
+        <li>Unlimited recipient lists</li>
+        <li>Open & click tracking</li>
+        <li>Scheduled campaigns</li>
+        <li>Email support</li>
+      </ul>
+      <a href="pricing.html?plan=pro" class="btn btn-primary" style="width:100%;justify-content:center">Start Pro →</a>
+    </div>
+
+    <div class="plan">
+      <div class="plan-name">Business</div>
+      <div class="plan-price">$79<span>/mo</span></div>
+      <div class="plan-desc">For agencies and power users</div>
+      <ul class="plan-features">
+        <li>Unlimited emails</li>
+        <li>Unlimited everything</li>
+        <li>Bounce webhook handler</li>
+        <li>Open & click tracking</li>
+        <li>Scheduled campaigns</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="pricing.html?plan=business" class="btn btn-ghost" style="width:100%;justify-content:center">Start Business →</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>Ready to start sending?</h2>
+  <p>Join hundreds of sales teams, recruiters, and founders using BulkMail.</p>
+  <a href="app.html#register" class="btn btn-primary btn-lg">Create Free Account →</a>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div style="font-weight:700;color:#38bdf8">📧 BulkMail</div>
+  <div>© 2025 BulkMail. All rights reserved.</div>
+  <div style="display:flex;gap:20px">
+    <a href="app.html">Sign In</a>
+    <a href="#pricing">Pricing</a>
+    <a href="mailto:support@bulkmail.app">Support</a>
+  </div>
+</footer>
+
+<script>
+// Theme — synced with app.html via localStorage
+let isLight = localStorage.getItem('theme') === 'light';
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', isLight ? 'light' : 'dark');
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = isLight ? '🌙 Dark' : '☀ Light';
+}
+function toggleTheme() {
+  isLight = !isLight;
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  applyTheme();
+}
+applyTheme();
+</script>
+</body>
+</html>

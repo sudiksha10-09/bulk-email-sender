@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>BulkMail — Upgrade Your Plan</title>
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column}
+a{color:inherit;text-decoration:none}
+nav{display:flex;align-items:center;justify-content:space-between;padding:18px 60px;border-bottom:1px solid #1e293b}
+.nav-logo{font-size:20px;font-weight:800;color:#38bdf8}
+@media(max-width:640px){nav{padding:16px 20px}}
+.main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px}
+.checkout-box{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:36px;width:100%;max-width:480px}
+h1{font-size:22px;font-weight:700;color:#f1f5f9;margin-bottom:6px}
+.subtitle{color:#64748b;font-size:14px;margin-bottom:28px}
+.plan-summary{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:18px;margin-bottom:24px}
+.plan-row{display:flex;justify-content:space-between;align-items:center;font-size:14px;padding:6px 0}
+.plan-row:not(:last-child){border-bottom:1px solid #1e293b}
+.plan-row .label{color:#64748b}
+.plan-row .value{color:#f1f5f9;font-weight:600}
+.plan-row.total .value{color:#38bdf8;font-size:18px}
+.form-group{margin-bottom:16px}
+label{display:block;font-size:12px;color:#94a3b8;margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+input{width:100%;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:10px 13px;color:#e2e8f0;font-size:14px;outline:none;transition:.15s}
+input:focus{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.1)}
+input::placeholder{color:#475569}
+#card-element{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:12px 13px}
+#card-element.StripeElement--focus{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.1)}
+#card-errors{color:#f87171;font-size:13px;margin-top:8px;min-height:18px}
+.btn{padding:12px 20px;border-radius:8px;border:none;cursor:pointer;font-size:15px;font-weight:700;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%}
+.btn-primary{background:#38bdf8;color:#0f172a}.btn-primary:hover{background:#7dd3fc}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.spinner{width:16px;height:16px;border:2px solid rgba(15,23,42,.3);border-top-color:#0f172a;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.secure-note{text-align:center;font-size:12px;color:#475569;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:6px}
+.alert{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:16px}
+.alert-error{background:#450a0a;border:1px solid #7f1d1d;color:#fca5a5}
+.alert-success{background:#064e3b;border:1px solid #065f46;color:#6ee7b7}
+.back-link{color:#64748b;font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:20px;cursor:pointer}
+.back-link:hover{color:#94a3b8}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="landing.html" class="nav-logo">📧 BulkMail</a>
+  <a href="app.html" style="font-size:14px;color:#64748b">← Back to app</a>
+</nav>
+
+<div class="main">
+  <div class="checkout-box">
+    <div class="back-link" onclick="history.back()">← Back</div>
+    <h1 id="page-title">Upgrade to Pro</h1>
+    <p class="subtitle">You'll be charged monthly. Cancel anytime.</p>
+
+    <div id="checkout-alert"></div>
+
+    <div class="plan-summary" id="plan-summary">
+      <div class="plan-row"><span class="label">Plan</span><span class="value" id="plan-name">Pro</span></div>
+      <div class="plan-row"><span class="label">Emails / month</span><span class="value" id="plan-emails">50,000</span></div>
+      <div class="plan-row"><span class="label">Billing</span><span class="value">Monthly</span></div>
+      <div class="plan-row total"><span class="label" style="font-weight:600;color:#e2e8f0">Total</span><span class="value" id="plan-total">$29 / mo</span></div>
+    </div>
+
+    <form id="payment-form">
+      <div class="form-group">
+        <label>Email</label>
+        <input id="billing-email" type="email" placeholder="you@example.com" autocomplete="email"/>
+      </div>
+      <div class="form-group">
+        <label>Card Details</label>
+        <div id="card-element"></div>
+        <div id="card-errors"></div>
+      </div>
+      <button class="btn btn-primary" type="submit" id="submit-btn">
+        <span id="btn-text">Pay Now →</span>
+      </button>
+    </form>
+
+    <div class="secure-note">🔒 Secured by Stripe · SSL encrypted</div>
+  </div>
+</div>
+
+<script>
+// ── Plan config ──────────────────────────────────────────────────────────────
+// Replace STRIPE_PUBLISHABLE_KEY with your actual key from https://dashboard.stripe.com/apikeys
+// Replace price IDs with your actual Stripe Price IDs
+const STRIPE_PUBLISHABLE_KEY = 'pk_test_REPLACE_WITH_YOUR_STRIPE_KEY';
+
+const PLANS = {
+  pro: {
+    name: 'Pro',
+    emails: '50,000',
+    price: '$29 / mo',
+    amount: 2900,
+    priceId: 'price_REPLACE_WITH_PRO_PRICE_ID',
+  },
+  business: {
+    name: 'Business',
+    emails: 'Unlimited',
+    price: '$79 / mo',
+    amount: 7900,
+    priceId: 'price_REPLACE_WITH_BUSINESS_PRICE_ID',
+  },
+};
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+const params = new URLSearchParams(location.search);
+const planKey = params.get('plan') || 'pro';
+const plan = PLANS[planKey] || PLANS.pro;
+
+document.getElementById('page-title').textContent = `Upgrade to ${plan.name}`;
+document.getElementById('plan-name').textContent = plan.name;
+document.getElementById('plan-emails').textContent = plan.emails;
+document.getElementById('plan-total').textContent = plan.price;
+
+// Pre-fill email from stored session
+const storedEmail = localStorage.getItem('user_email');
+if (storedEmail) document.getElementById('billing-email').value = storedEmail;
+
+// ── Stripe ───────────────────────────────────────────────────────────────────
+let stripe, cardElement;
+
+try {
+  stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+  const elements = stripe.elements({
+    appearance: {
+      theme: 'night',
+      variables: {
+        colorPrimary: '#38bdf8',
+        colorBackground: '#0f172a',
+        colorText: '#e2e8f0',
+        colorDanger: '#f87171',
+        fontFamily: 'Segoe UI, system-ui, sans-serif',
+        borderRadius: '8px',
+      },
+    },
+  });
+  cardElement = elements.create('card', {
+    style: {
+      base: { color: '#e2e8f0', fontSize: '14px', '::placeholder': { color: '#475569' } },
+      invalid: { color: '#f87171' },
+    },
+  });
+  cardElement.mount('#card-element');
+  cardElement.on('change', e => {
+    document.getElementById('card-errors').textContent = e.error ? e.error.message : '';
+  });
+} catch(e) {
+  document.getElementById('card-element').innerHTML =
+    '<div style="color:#f87171;font-size:13px">⚠️ Stripe not configured. Set your publishable key in pricing.html.</div>';
+}
+
+// ── Submit ───────────────────────────────────────────────────────────────────
+document.getElementById('payment-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!stripe || !cardElement) {
+    showAlert('Stripe is not configured. Please set your publishable key.', 'error'); return;
+  }
+
+  const email = document.getElementById('billing-email').value.trim();
+  if (!email) { showAlert('Please enter your email address.', 'error'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  document.getElementById('btn-text').innerHTML = '<div class="spinner"></div> Processing...';
+
+  try {
+    // Create payment method
+    const { paymentMethod, error } = await stripe.createPaymentMethod({
+      type: 'card',
+      card: cardElement,
+      billing_details: { email },
+    });
+
+    if (error) {
+      document.getElementById('card-errors').textContent = error.message;
+      btn.disabled = false;
+      document.getElementById('btn-text').textContent = 'Pay Now →';
+      return;
+    }
+
+    // Send to your backend to create subscription
+    const token = localStorage.getItem('access_token');
+    const res = await fetch('/api/billing/subscribe/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        payment_method_id: paymentMethod.id,
+        price_id: plan.priceId,
+        email,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data?.requires_action) {
+      // Handle 3D Secure
+      const { error: confirmError } = await stripe.confirmCardPayment(data.client_secret);
+      if (confirmError) {
+        showAlert(confirmError.message, 'error');
+        btn.disabled = false;
+        document.getElementById('btn-text').textContent = 'Pay Now →';
+        return;
+      }
+    }
+
+    if (data?.success || res.ok) {
+      showAlert('🎉 Payment successful! Redirecting to your dashboard...', 'success');
+      setTimeout(() => { window.location.href = 'app.html'; }, 2500);
+    } else {
+      showAlert(data?.error || 'Payment failed. Please try again.', 'error');
+      btn.disabled = false;
+      document.getElementById('btn-text').textContent = 'Pay Now →';
+    }
+  } catch(err) {
+    showAlert('Network error. Please try again.', 'error');
+    btn.disabled = false;
+    document.getElementById('btn-text').textContent = 'Pay Now →';
+  }
+});
+
+function showAlert(msg, type) {
+  const el = document.getElementById('checkout-alert');
+  el.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+}
+</script>
+</body>
+</html>

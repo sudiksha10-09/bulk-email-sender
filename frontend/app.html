@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>BulkMail</title>
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet"/>
+<style>
+/* ══ THEME VARIABLES ══════════════════════════════════════ */
+:root,[data-theme="dark"]{
+  --bg:#0f172a;--surface:#1e293b;--surface2:#0f172a;
+  --border:#334155;--border2:#1e293b;
+  --text:#e2e8f0;--text-muted:#94a3b8;--text-dim:#64748b;--text-faint:#475569;
+  --input-bg:#0f172a;--input-border:#334155;
+  --nav-active-bg:rgba(56,189,248,.07);
+  --card-bg:#1e293b;--sidebar-bg:#1e293b;--main-bg:#0f172a;
+  --tip-bg:rgba(30,58,95,.5);--tip-border:#1d4ed8;--tip-text:#93c5fd;
+  --badge-gray-bg:#334155;--badge-gray-text:#94a3b8;
+  --table-hover:rgba(255,255,255,.02);
+  --shadow:0 1px 3px rgba(0,0,0,.4);
+}
+[data-theme="light"]{
+  --bg:#f1f5f9;--surface:#ffffff;--surface2:#f8fafc;
+  --border:#e2e8f0;--border2:#f1f5f9;
+  --text:#1e293b;--text-muted:#475569;--text-dim:#64748b;--text-faint:#94a3b8;
+  --input-bg:#ffffff;--input-border:#cbd5e1;
+  --nav-active-bg:rgba(14,165,233,.08);
+  --card-bg:#ffffff;--sidebar-bg:#ffffff;--main-bg:#f1f5f9;
+  --tip-bg:#eff6ff;--tip-border:#bfdbfe;--tip-text:#1d4ed8;
+  --badge-gray-bg:#e2e8f0;--badge-gray-text:#475569;
+  --table-hover:rgba(0,0,0,.02);
+  --shadow:0 1px 3px rgba(0,0,0,.1);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+
+/* ── Auth screens ── */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:var(--bg)}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px;width:100%;max-width:420px;box-shadow:var(--shadow)}
+.auth-logo{font-size:28px;font-weight:800;color:#38bdf8;text-align:center;margin-bottom:6px}
+.auth-tagline{text-align:center;color:var(--text-dim);font-size:14px;margin-bottom:28px}
+.auth-tabs{display:flex;background:var(--surface2);border-radius:8px;padding:4px;margin-bottom:24px}
+.auth-tab{flex:1;padding:8px;text-align:center;border-radius:6px;cursor:pointer;font-size:14px;font-weight:500;color:var(--text-dim);transition:.15s}
+.auth-tab.active{background:var(--surface);color:#38bdf8;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+/* Password show/hide */
+.pw-wrap{position:relative;display:flex}
+.pw-wrap input{padding-right:40px}
+.pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-dim);padding:0;line-height:1}
+.pw-toggle:hover{color:var(--text-muted)}
+
+/* ── App layout ── */
+#app-screen{display:none;height:100vh;overflow:hidden}
+.layout{display:flex;height:100%}
+.sidebar{width:220px;background:var(--sidebar-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:background .2s}
+.logo{padding:20px 18px;font-size:18px;font-weight:800;color:#38bdf8;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.user-bar{padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text-dim);display:flex;align-items:center;justify-content:space-between}
+.user-email{color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}
+.nav{padding:10px 0;flex:1}
+.nav-item{padding:11px 18px;cursor:pointer;color:var(--text-muted);font-size:14px;display:flex;align-items:center;gap:10px;transition:.15s;border-left:3px solid transparent;border-radius:0 8px 8px 0;margin:1px 8px 1px 0}
+.nav-item:hover{color:var(--text);background:var(--nav-active-bg)}
+.nav-item.active{color:#38bdf8;border-left-color:#38bdf8;background:var(--nav-active-bg)}
+.main{flex:1;overflow-y:auto;padding:32px 40px;background:var(--main-bg);transition:background .2s}
+@media(max-width:768px){.main{padding:20px 16px}.sidebar{width:200px}}
+.page{display:none}.page.active{display:block}
+</style>
+
+<style>
+/* ── Typography ── */
+h1{font-size:22px;font-weight:700;color:var(--text);margin-bottom:5px}
+.subtitle{color:var(--text-dim);font-size:14px;margin-bottom:26px}
+h2{font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+
+/* ── Steps wizard ── */
+.steps{display:flex;margin-bottom:28px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.step{flex:1;padding:14px 8px;text-align:center;font-size:12px;color:var(--text-dim);cursor:pointer;border-right:1px solid var(--border);transition:.15s}
+.step:last-child{border-right:none}
+.step.active{background:var(--surface2);color:#38bdf8;font-weight:600}
+.step.done{color:#34d399}
+.step-num{display:block;font-size:20px;margin-bottom:3px}
+
+/* ── Cards ── */
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:16px}
+.card-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.card-row{grid-template-columns:1fr}}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+@media(max-width:640px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:18px}
+.stat-val{font-size:30px;font-weight:700;color:#38bdf8}
+.stat-label{font-size:12px;color:var(--text-dim);margin-top:4px}
+
+/* ── Forms ── */
+.form-group{margin-bottom:16px}
+label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+input,select,textarea{width:100%;background:var(--input-bg);border:1px solid var(--input-border);border-radius:8px;padding:10px 13px;color:var(--text);font-size:14px;outline:none;transition:.15s;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.1)}
+input::placeholder,textarea::placeholder{color:var(--text-faint)}
+textarea{resize:vertical;min-height:120px;font-family:inherit;line-height:1.6}
+select option{background:var(--surface)}
+.input-hint{font-size:12px;color:var(--text-faint);margin-top:5px}
+
+/* ── Buttons ── */
+.btn{padding:10px 20px;border-radius:8px;border:none;cursor:pointer;font-size:14px;font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.btn-primary{background:#38bdf8;color:#0f172a}.btn-primary:hover{background:#7dd3fc}
+.btn-success{background:#10b981;color:#fff}.btn-success:hover{background:#059669}
+.btn-danger{background:transparent;color:#f87171;border:1px solid #7f1d1d}.btn-danger:hover{background:#450a0a;color:#fca5a5}
+.btn-ghost{background:transparent;color:var(--text-muted);border:1px solid var(--border)}.btn-ghost:hover{border-color:#38bdf8;color:#38bdf8}
+.btn-sm{padding:6px 12px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center}
+.btn-link{background:none;border:none;color:#38bdf8;cursor:pointer;font-size:13px;padding:0;text-decoration:underline}
+
+/* ── Table ── */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:500px}
+th{text-align:left;padding:10px 14px;color:var(--text-faint);font-weight:600;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:12px 14px;border-bottom:1px solid var(--border2);color:var(--text-muted);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--table-hover)}
+
+/* ── Badges ── */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:capitalize}
+.badge-green{background:#064e3b;color:#34d399}.badge-blue{background:#1e3a5f;color:#60a5fa}
+.badge-yellow{background:#451a03;color:#fbbf24}.badge-red{background:#450a0a;color:#f87171}
+.badge-gray{background:var(--badge-gray-bg);color:var(--badge-gray-text)}
+
+/* ── Alerts ── */
+.alert{padding:12px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:flex;align-items:flex-start;gap:9px;line-height:1.5}
+.alert-error{background:#450a0a;border:1px solid #7f1d1d;color:#fca5a5}
+.alert-success{background:#064e3b;border:1px solid #065f46;color:#6ee7b7}
+.alert-info{background:#1e3a5f;border:1px solid #1d4ed8;color:#93c5fd}
+.alert-warn{background:#451a03;border:1px solid #92400e;color:#fcd34d}
+
+/* ── Progress ── */
+.progress-bar{background:var(--border);border-radius:99px;height:6px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;background:#38bdf8;border-radius:99px;transition:width .4s}
+
+/* ── Spinner ── */
+.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:#38bdf8;border-radius:50%;animation:spin .6s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Empty state ── */
+.empty{text-align:center;padding:56px 20px;color:var(--text-faint)}
+.empty-icon{font-size:44px;margin-bottom:12px}
+
+/* ── Tip ── */
+.tip{background:var(--tip-bg);border:1px solid var(--tip-border);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--tip-text);margin-bottom:18px;line-height:1.6}
+
+/* ── Modal ── */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto}
+
+/* ── Quill dark/light ── */
+.ql-toolbar{background:var(--surface);border:1px solid var(--border) !important;border-radius:8px 8px 0 0;padding:8px}
+.ql-toolbar .ql-stroke{stroke:var(--text-muted)}.ql-toolbar .ql-fill{fill:var(--text-muted)}
+.ql-toolbar button:hover .ql-stroke,.ql-toolbar .ql-active .ql-stroke{stroke:#38bdf8}
+.ql-toolbar button:hover .ql-fill,.ql-toolbar .ql-active .ql-fill{fill:#38bdf8}
+.ql-toolbar .ql-picker-label{color:var(--text-muted)}.ql-toolbar .ql-picker-options{background:var(--surface);border-color:var(--border)}
+.ql-editor{min-height:200px;font-size:14px;line-height:1.7;color:var(--text);background:var(--input-bg);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px}
+.ql-editor.ql-blank::before{color:var(--text-faint);font-style:normal}
+.ql-container{border:none !important}.empty p{font-size:15px;margin-bottom:16px}
+
+/* ── Tip ── */
+.tip{background:rgba(30,58,95,.5);border:1px solid #1d4ed8;border-radius:8px;padding:12px 16px;font-size:13px;color:#93c5fd;margin-bottom:18px;line-height:1.6}
+
+/* ── Modal ── */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:28px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto}
+
+/* ── Quill dark ── */
+.ql-toolbar{background:#1e293b;border:1px solid #334155 !important;border-radius:8px 8px 0 0;padding:8px}
+.ql-toolbar .ql-stroke{stroke:#94a3b8}.ql-toolbar .ql-fill{fill:#94a3b8}
+.ql-toolbar button:hover .ql-stroke,.ql-toolbar .ql-active .ql-stroke{stroke:#38bdf8}
+.ql-toolbar button:hover .ql-fill,.ql-toolbar .ql-active .ql-fill{fill:#38bdf8}
+.ql-toolbar .ql-picker-label{color:#94a3b8}.ql-toolbar .ql-picker-options{background:#1e293b;border-color:#334155}
+.ql-editor{min-height:200px;font-size:14px;line-height:1.7;color:#e2e8f0;background:#0f172a;border:1px solid #334155;border-top:none;border-radius:0 0 8px 8px}
+.ql-editor.ql-blank::before{color:#475569;font-style:normal}
+.ql-container{border:none !important}
+</style>
+
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     AUTH SCREEN
+══════════════════════════════════════════════════════════ -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">📧 BulkMail</div>
+    <div class="auth-tagline">Send personalized email campaigns at scale</div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Sign In</div>
+      <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Create Account</div>
+    </div>
+
+    <div id="auth-alert"></div>
+
+    <!-- Login form -->
+    <div id="form-login">
+      <div class="form-group">
+        <label>Email</label>
+        <input id="l-email" type="email" placeholder="you@example.com" autocomplete="email"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+          <button type="button" class="pw-toggle" onclick="togglePw('l-pass',this)" title="Show password">👁</button>
+        </div>
+      </div>
+      <div style="text-align:right;margin-bottom:14px">
+        <button class="btn-link" onclick="showForgotPassword()" style="font-size:13px">Forgot password?</button>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()" id="btn-login">Sign In</button>
+    </div>
+
+    <!-- Register form -->
+    <div id="form-register" style="display:none">
+      <div class="form-group">
+        <label>Email</label>
+        <input id="r-email" type="email" placeholder="you@example.com" autocomplete="email"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input id="r-pass" type="password" placeholder="Min 8 chars, uppercase, number" autocomplete="new-password"/>
+          <button type="button" class="pw-toggle" onclick="togglePw('r-pass',this)" title="Show password">👁</button>
+        </div>
+        <div class="input-hint">At least 8 characters with uppercase letters and numbers</div>
+      </div>
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <div class="pw-wrap">
+          <input id="r-pass2" type="password" placeholder="••••••••" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/>
+          <button type="button" class="pw-toggle" onclick="togglePw('r-pass2',this)" title="Show password">👁</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doRegister()" id="btn-register">Create Account</button>
+    </div>
+
+    <!-- Forgot password form -->
+    <div id="form-forgot" style="display:none">
+      <p style="font-size:14px;color:#64748b;margin-bottom:16px">Enter your email and we'll send a reset link.</p>
+      <div class="form-group">
+        <label>Email</label>
+        <input id="fp-email" type="email" placeholder="you@example.com"/>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doForgotPassword()" id="btn-forgot">Send Reset Link</button>
+      <div style="text-align:center;margin-top:12px">
+        <button class="btn-link" onclick="switchAuthTab('login')" style="font-size:13px">← Back to Sign In</button>
+      </div>
+    </div>
+
+    <!-- Reset password form (shown when ?reset_token= in URL) -->
+    <div id="form-reset" style="display:none">
+      <p style="font-size:14px;color:#64748b;margin-bottom:16px">Enter your new password.</p>
+      <div class="form-group">
+        <label>New Password</label>
+        <div class="pw-wrap">
+          <input id="rp-pass" type="password" placeholder="Min 8 chars, uppercase, number"/>
+          <button type="button" class="pw-toggle" onclick="togglePw('rp-pass',this)">👁</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Confirm New Password</label>
+        <div class="pw-wrap">
+          <input id="rp-pass2" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doResetPassword()"/>
+          <button type="button" class="pw-toggle" onclick="togglePw('rp-pass2',this)">👁</button>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doResetPassword()" id="btn-reset">Set New Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     APP SCREEN
+══════════════════════════════════════════════════════════ -->
+<div id="app-screen">
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="logo">📧 BulkMail</div>
+    <div class="user-bar">
+      <span class="user-email" id="sidebar-email">—</span>
+      <button class="btn-link" onclick="doLogout()" title="Sign out">↩</button>
+    </div>
+    <div class="nav">
+      <div class="nav-item active" onclick="nav('send')" id="nav-send">🚀 Quick Send</div>
+      <div class="nav-item" onclick="nav('campaigns')" id="nav-campaigns">📋 Campaigns</div>
+      <div class="nav-item" onclick="nav('recipients')" id="nav-recipients">👥 Recipients</div>
+      <div class="nav-item" onclick="nav('smtp')" id="nav-smtp">⚙️ SMTP</div>
+      <div class="nav-item" onclick="showChangePassword()" id="nav-chpw">🔑 Change Password</div>
+    </div>
+    <div style="padding:10px 18px;border-top:1px solid var(--border)">
+      <a href="/generator/" style="font-size:13px;color:#38bdf8;display:flex;align-items:center;gap:6px;font-weight:600">✉️ Email Generator ↗</a>
+    </div>
+    <div style="padding:12px 18px;border-top:1px solid #334155;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:12px;color:#475569">Theme</span>
+      <button onclick="toggleTheme()" id="theme-btn" style="background:#334155;border:none;border-radius:20px;padding:4px 10px;cursor:pointer;font-size:12px;color:#94a3b8;transition:.2s">☀ Light</button>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+
+    <!-- ── QUICK SEND ── -->
+    <div id="page-send" class="page active">
+      <h1>Quick Send</h1>
+      <p class="subtitle">Set up your SMTP, upload recipients, write your email, and send.</p>
+
+      <div class="steps">
+        <div class="step active" id="step-tab-1" onclick="goStep(1)"><span class="step-num">1</span>SMTP</div>
+        <div class="step" id="step-tab-2" onclick="goStep(2)"><span class="step-num">2</span>Recipients</div>
+        <div class="step" id="step-tab-3" onclick="goStep(3)"><span class="step-num">3</span>Email</div>
+        <div class="step" id="step-tab-4" onclick="goStep(4)"><span class="step-num">4</span>Send</div>
+      </div>
+
+      <div id="step-alert"></div>
+
+      <!-- Step 1: SMTP -->
+      <div id="step-1">
+        <div class="tip">💡 For Gmail, use an <strong>App Password</strong> — Google Account → Security → 2-Step Verification → App Passwords. Your regular password won't work.</div>
+        <div class="card">
+          <div id="smtp-saved-banner"></div>
+          <div id="smtp-form-wrap">
+            <div class="card-row">
+              <div class="form-group">
+                <label>Label</label>
+                <input id="s-name" placeholder="e.g. My Gmail Account"/>
+              </div>
+              <div class="form-group">
+                <label>Provider</label>
+                <select id="s-provider" onchange="fillSmtp()">
+                  <option value="gmail">Gmail</option>
+                  <option value="sendgrid">SendGrid</option>
+                  <option value="mailgun">Mailgun</option>
+                  <option value="custom">Custom SMTP</option>
+                </select>
+              </div>
+            </div>
+            <div class="card-row">
+              <div class="form-group">
+                <label>SMTP Host</label>
+                <input id="s-host" value="smtp.gmail.com"/>
+              </div>
+              <div class="form-group">
+                <label>Port</label>
+                <input id="s-port" type="number" value="587"/>
+              </div>
+            </div>
+            <div class="card-row">
+              <div class="form-group">
+                <label>Email / Username</label>
+                <input id="s-user" type="email" placeholder="you@gmail.com"/>
+              </div>
+              <div class="form-group">
+                <label>Password / App Password</label>
+                <input id="s-pass" type="password" placeholder="••••••••••••••••"/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label style="text-transform:none;letter-spacing:0;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" id="s-tls" checked style="width:auto;accent-color:#38bdf8"/>
+                Use TLS (recommended)
+              </label>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="saveSMTP()" id="btn-save-smtp">💾 Save & Continue</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Recipients -->
+      <div id="step-2" style="display:none">
+        <div class="tip">💡 Your CSV must have an <strong>email</strong> column. Extra columns like <em>name</em> or <em>company</em> become variables you can use in your email as <strong>{{name}}</strong>.</div>
+        <div class="card">
+          <div id="rlist-saved-banner"></div>
+          <div id="rlist-form-wrap">
+            <div class="card-row">
+              <div class="form-group">
+                <label>List Name</label>
+                <input id="rl-name" placeholder="e.g. Q1 Prospects"/>
+              </div>
+              <div class="form-group">
+                <label>CSV File</label>
+                <input id="rl-file" type="file" accept=".csv" style="padding:8px"/>
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="uploadCSV()" id="btn-upload-csv">📤 Upload CSV</button>
+            </div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Email content -->
+      <div id="step-3" style="display:none">
+        <div class="tip">💡 Use <strong>{{name}}</strong>, <strong>{{company}}</strong> etc. to personalize — they'll be replaced with each recipient's data from your CSV.</div>
+        <div class="card">
+          <div class="form-group">
+            <label>Subject Line</label>
+            <input id="e-subject" placeholder="Hi {{name}}, quick question about {{company}}" oninput="checkVariables()"/>
+          </div>
+          <div class="form-group">
+            <label>Email Body</label>
+            <div id="quill-toolbar">
+              <span class="ql-formats">
+                <select class="ql-header"><option value="1">Heading</option><option value="2">Subheading</option><option selected>Normal</option></select>
+              </span>
+              <span class="ql-formats">
+                <button class="ql-bold"></button><button class="ql-italic"></button><button class="ql-underline"></button>
+              </span>
+              <span class="ql-formats">
+                <button class="ql-list" value="ordered"></button><button class="ql-list" value="bullet"></button>
+              </span>
+              <span class="ql-formats"><button class="ql-link"></button></span>
+              <span class="ql-formats"><button class="ql-clean"></button></span>
+            </div>
+            <div id="quill-editor"></div>
+          </div>
+          <div id="variable-hint"></div>
+          <div class="form-group" style="margin-top:16px">
+            <label>Attachment <span style="color:#475569;text-transform:none;letter-spacing:0">(optional)</span></label>
+            <input id="e-attachment" type="file" accept=".pdf,.doc,.docx,.png,.jpg,.zip" style="padding:8px"/>
+            <div id="attachment-preview" class="input-hint"></div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+          <button class="btn btn-primary" onclick="goStep(4)">Review & Send →</button>
+        </div>
+      </div>
+
+      <!-- Step 4: Review & Send -->
+      <div id="step-4" style="display:none">
+        <div class="card" id="review-card"></div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" onclick="goStep(3)">← Back</button>
+          <button class="btn btn-success" onclick="sendNow()" id="btn-send">🚀 Send Campaign</button>
+        </div>
+        <div id="send-progress" style="display:none;margin-top:20px">
+          <div class="card">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+              <div class="spinner"></div>
+              <span id="send-status-text" style="font-size:14px">Sending emails...</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="send-progress-fill" style="width:0%"></div></div>
+            <div class="input-hint" style="margin-top:8px" id="send-progress-label"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CAMPAIGNS ── -->
+    <div id="page-campaigns" class="page">
+      <div class="section-header">
+        <div><h1>Campaigns</h1><p class="subtitle" style="margin-bottom:0">All your past and active campaigns.</p></div>
+        <button class="btn btn-primary btn-sm" onclick="nav('send')">+ New Campaign</button>
+      </div>
+      <div id="campaigns-content"></div>
+    </div>
+
+    <!-- ── RECIPIENTS ── -->
+    <div id="page-recipients" class="page">
+      <div class="section-header">
+        <div><h1>Recipient Lists</h1><p class="subtitle" style="margin-bottom:0">Manage your uploaded contact lists.</p></div>
+      </div>
+      <div id="recipients-content"></div>
+    </div>
+
+    <!-- ── SMTP ── -->
+    <div id="page-smtp" class="page">
+      <div class="section-header">
+        <div><h1>SMTP Configs</h1><p class="subtitle" style="margin-bottom:0">Manage your email sending accounts.</p></div>
+      </div>
+      <div id="smtp-content"></div>
+    </div>
+
+    <!-- ── CAMPAIGN DETAIL ── -->
+    <div id="page-detail" class="page">
+      <div class="section-header">
+        <div>
+          <button class="btn btn-ghost btn-sm" onclick="nav('campaigns')" style="margin-bottom:12px">← All Campaigns</button>
+          <h1 id="detail-name">Campaign</h1>
+          <p class="subtitle" style="margin-bottom:0" id="detail-subtitle">Campaign details</p>
+        </div>
+        <div id="detail-actions"></div>
+      </div>
+      <div id="detail-content"></div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /layout -->
+</div><!-- /app-screen -->
+
+<!-- Modal -->
+<div id="modal-overlay" onclick="if(event.target===this)closeModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:20px">
+  <div class="modal-box">
+    <div id="modal-body"></div>
+    <div style="margin-top:20px"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Close</button></div>
+  </div>
+</div>
+
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// STATE & HELPERS
+// ══════════════════════════════════════════════════════════
+const API = '';
+let accessToken = localStorage.getItem('access_token') || null;
+let currentUser = null;
+let selectedSMTP = null;
+let selectedRList = null;
+let currentStep = 1;
+let quill = null;
+
+async function apiFetch(method, path, body=null, isForm=false) {
+  const headers = {};
+  if (!isForm) headers['Content-Type'] = 'application/json';
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+  const opts = {method, headers};
+  if (body) opts.body = isForm ? body : JSON.stringify(body);
+  try {
+    const res = await fetch(API + path, opts);
+    if (res.status === 204) return {};
+    if (res.status === 401) { doLogout(); return {error: 'Session expired. Please sign in again.'}; }
+    return res.json();
+  } catch(e) { return {error: 'Network error: ' + e.message}; }
+}
+
+function showAlert(id, msg, type='error') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const icons = {error:'⚠️', success:'✅', info:'ℹ️', warn:'⚠️'};
+  el.innerHTML = `<div class="alert alert-${type}">${icons[type]||''} ${msg}</div>`;
+  if (type !== 'error') setTimeout(() => { if(el) el.innerHTML = ''; }, 5000);
+}
+
+function clearAlert(id) { const el=document.getElementById(id); if(el) el.innerHTML=''; }
+
+function openModal(html) {
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+
+function badge(s) {
+  const m={draft:'badge-gray',scheduled:'badge-blue',queued:'badge-blue',sending:'badge-yellow',completed:'badge-green',failed:'badge-red'};
+  return `<span class="badge ${m[s]||'badge-gray'}">${s}</span>`;
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString(undefined, {month:'short',day:'numeric',year:'numeric'});
+}
+
+// ══════════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════════
+function switchAuthTab(tab) {
+  ['form-login','form-register','form-forgot','form-reset'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const tabs = document.querySelector('.auth-tabs');
+  if (tabs) tabs.style.display = 'flex';
+  if (tab === 'login') document.getElementById('form-login').style.display = 'block';
+  if (tab === 'register') document.getElementById('form-register').style.display = 'block';
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-register').classList.toggle('active', tab==='register');
+  clearAlert('auth-alert');
+}
+
+async function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pass = document.getElementById('l-pass').value;
+  if (!email || !pass) { showAlert('auth-alert', 'Please enter your email and password.'); return; }
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Signing in...';
+  const res = await apiFetch('POST', '/api/auth/login', {email, password: pass});
+  btn.disabled = false; btn.textContent = 'Sign In';
+  if (res?.access_token) {
+    accessToken = res.access_token;
+    localStorage.setItem('access_token', accessToken);
+    const userEmail = res?.user?.email || email;
+    localStorage.setItem('user_email', userEmail);
+    currentUser = {email: userEmail};
+    enterApp();
+  } else {
+    showAlert('auth-alert', res?.error || res?.detail || 'Invalid email or password.');
+  }
+}
+
+async function doRegister() {
+  const email = document.getElementById('r-email').value.trim();
+  const pass = document.getElementById('r-pass').value;
+  const pass2 = document.getElementById('r-pass2').value;
+  if (!email || !pass) { showAlert('auth-alert', 'Please fill in all fields.'); return; }
+  if (pass !== pass2) { showAlert('auth-alert', 'Passwords do not match.'); return; }
+  const btn = document.getElementById('btn-register');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Creating account...';
+  const res = await apiFetch('POST', '/api/auth/register', {email, password: pass, password_confirm: pass2});
+  btn.disabled = false; btn.textContent = 'Create Account';
+  if (res?.message || res?.id || res?.email) {
+    showAlert('auth-alert', 'Account created! Check your email to verify, then sign in.', 'success');
+    setTimeout(() => switchAuthTab('login'), 2000);
+  } else {
+    const msg = res?.error || res?.email?.[0] || res?.password?.[0] || JSON.stringify(res);
+    showAlert('auth-alert', msg);
+  }
+}
+
+function doLogout() {
+  accessToken = null;
+  localStorage.removeItem('access_token');
+  currentUser = null;
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('l-email').value = '';
+  document.getElementById('l-pass').value = '';
+}
+
+function enterApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  document.getElementById('sidebar-email').textContent = currentUser?.email || localStorage.getItem('user_email') || '';
+  if (!quill) initQuill();
+  loadSMTPForStep();
+  loadRListForStep();
+}
+
+// Auto-login if token exists
+if (accessToken) {
+  // Verify token is still valid by fetching user data
+  apiFetch('GET', '/api/smtp-configs/').then(res => {
+    if (res?.error === 'Session expired. Please sign in again.') return;
+    // Token valid — try to get email from stored data
+    currentUser = {email: localStorage.getItem('user_email') || ''};
+    enterApp();
+  });
+}
+</script>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  const navEl = document.getElementById('nav-' + page);
+  if (navEl) navEl.classList.add('active');
+  if (page === 'campaigns') loadCampaignsPage();
+  if (page === 'smtp') loadSMTPPage();
+  if (page === 'recipients') loadRecipientsPage();
+}
+
+// ══════════════════════════════════════════════════════════
+// STEP WIZARD
+// ══════════════════════════════════════════════════════════
+function goStep(n) {
+  document.getElementById('step-' + currentStep).style.display = 'none';
+  document.getElementById('step-tab-' + currentStep).classList.remove('active');
+  currentStep = n;
+  document.getElementById('step-' + n).style.display = 'block';
+  document.getElementById('step-tab-' + n).classList.add('active');
+  clearAlert('step-alert');
+  if (n === 3) setTimeout(checkVariables, 100);
+  if (n === 4) buildReview();
+}
+
+// ══════════════════════════════════════════════════════════
+// STEP 1: SMTP
+// ══════════════════════════════════════════════════════════
+const SMTP_PRESETS = {
+  gmail:    ['smtp.gmail.com', 587],
+  sendgrid: ['smtp.sendgrid.net', 587],
+  mailgun:  ['smtp.mailgun.org', 587],
+  custom:   ['', 587],
+};
+
+function fillSmtp() {
+  const p = document.getElementById('s-provider').value;
+  const [host, port] = SMTP_PRESETS[p] || ['', 587];
+  document.getElementById('s-host').value = host;
+  document.getElementById('s-port').value = port;
+}
+
+async function saveSMTP() {
+  const body = {
+    name: document.getElementById('s-name').value || document.getElementById('s-user').value,
+    provider: document.getElementById('s-provider').value,
+    host: document.getElementById('s-host').value.trim(),
+    port: parseInt(document.getElementById('s-port').value) || 587,
+    username: document.getElementById('s-user').value.trim(),
+    password: document.getElementById('s-pass').value,
+    use_tls: document.getElementById('s-tls').checked,
+  };
+  if (!body.host || !body.username || !body.password) {
+    showAlert('step-alert', 'Please fill in host, username, and password.'); return;
+  }
+  const btn = document.getElementById('btn-save-smtp');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Saving...';
+  const res = await apiFetch('POST', '/api/smtp-configs/', body);
+  btn.disabled = false; btn.innerHTML = '💾 Save & Continue';
+  if (res?.id) {
+    selectedSMTP = res;
+    localStorage.setItem('user_email', body.username);
+    document.getElementById('sidebar-email').textContent = body.username;
+    showSMTPBanner(res);
+    goStep(2);
+  } else {
+    showAlert('step-alert', res?.error || res?.password?.[0] || JSON.stringify(res));
+  }
+}
+
+function showSMTPBanner(s) {
+  document.getElementById('smtp-saved-banner').innerHTML = `
+    <div class="alert alert-success" style="margin-bottom:16px">
+      ✅ Sending from <strong>${s.username}</strong> via ${s.provider}
+      &nbsp;<button class="btn-link" onclick="clearSMTPBanner()">change</button>
+    </div>`;
+  document.getElementById('smtp-form-wrap').style.display = 'none';
+}
+
+function clearSMTPBanner() {
+  document.getElementById('smtp-saved-banner').innerHTML = '';
+  document.getElementById('smtp-form-wrap').style.display = 'block';
+  selectedSMTP = null;
+}
+
+async function loadSMTPForStep() {
+  const res = await apiFetch('GET', '/api/smtp-configs/');
+  const list = res?.results || res || [];
+  if (Array.isArray(list) && list.length) {
+    selectedSMTP = list[0];
+    showSMTPBanner(list[0]);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// STEP 2: RECIPIENTS
+// ══════════════════════════════════════════════════════════
+async function uploadCSV() {
+  const file = document.getElementById('rl-file').files[0];
+  if (!file) { showAlert('step-alert', 'Please select a CSV file.'); return; }
+  const fd = new FormData();
+  fd.append('name', document.getElementById('rl-name').value || file.name.replace('.csv',''));
+  fd.append('csv_file', file);
+  const btn = document.getElementById('btn-upload-csv');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Uploading...';
+  const res = await apiFetch('POST', '/api/recipient-lists/', fd, true);
+  btn.disabled = false; btn.innerHTML = '📤 Upload CSV';
+  if (res?.id) {
+    selectedRList = res;
+    // Fetch sample columns for variable validation
+    const detail = await apiFetch('GET', `/api/recipient-lists/${res.id}/`);
+    if (detail?.recipients?.length) {
+      selectedRList.sample_columns = Object.keys(detail.recipients[0].metadata || {});
+    }
+    showRListBanner(res);
+    goStep(3);
+  } else {
+    showAlert('step-alert', res?.error || 'Upload failed. Make sure your CSV has an "email" column.');
+  }
+}
+
+function showRListBanner(r) {
+  document.getElementById('rlist-saved-banner').innerHTML = `
+    <div class="alert alert-success" style="margin-bottom:16px">
+      ✅ <strong>${r.name}</strong> — ${r.valid_count} valid recipients
+      ${r.invalid_count ? `<span style="color:#fbbf24"> · ${r.invalid_count} invalid skipped</span>` : ''}
+      &nbsp;<button class="btn-link" onclick="clearRListBanner()">change</button>
+    </div>`;
+  document.getElementById('rlist-form-wrap').style.display = 'none';
+}
+
+function clearRListBanner() {
+  document.getElementById('rlist-saved-banner').innerHTML = '';
+  document.getElementById('rlist-form-wrap').style.display = 'block';
+  selectedRList = null;
+}
+
+async function loadRListForStep() {
+  const res = await apiFetch('GET', '/api/recipient-lists/');
+  const list = res?.results || res || [];
+  if (Array.isArray(list) && list.length) {
+    selectedRList = list[0];
+    showRListBanner(list[0]);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// STEP 3: EMAIL CONTENT
+// ══════════════════════════════════════════════════════════
+function initQuill() {
+  quill = new Quill('#quill-editor', {
+    theme: 'snow',
+    modules: { toolbar: '#quill-toolbar' },
+    placeholder: 'Hi {{name}},\n\nI came across {{company}} and wanted to reach out...\n\nBest,\nYour Name',
+  });
+  quill.on('text-change', checkVariables);
+}
+
+function getEmailBody() {
+  let html = quill.root.innerHTML;
+  // Strip HTML tags from inside {{ }} variables
+  html = html.replace(/\{\{([^}]+)\}\}/g, (match, content) => {
+    // Remove all HTML tags from the variable content
+    const cleanContent = content.replace(/<[^>]*>/g, '').trim();
+    return `{{${cleanContent}}}`;
+  });
+  return html;
+}
+function getEmailText() { return quill ? quill.getText() : ''; }
+
+function checkVariables() {
+  const subject = document.getElementById('e-subject')?.value || '';
+  const bodyText = getEmailText();
+  const combined = subject + ' ' + bodyText;
+  const vars = [...new Set([...combined.matchAll(/\{\{([a-zA-Z_][a-zA-Z0-9_]*)\}\}/g)].map(m => m[1]))];
+  const hint = document.getElementById('variable-hint');
+  if (!hint) return;
+  if (!vars.length) { hint.innerHTML = ''; return; }
+  if (selectedRList?.sample_columns) {
+    const missing = vars.filter(v => !selectedRList.sample_columns.includes(v));
+    if (missing.length) {
+      hint.innerHTML = `<div class="alert alert-warn">⚠️ Variables not in your CSV: <strong>${missing.join(', ')}</strong>. Your CSV columns: ${selectedRList.sample_columns.join(', ')}</div>`;
+      return;
+    }
+  }
+  hint.innerHTML = `<div class="alert alert-info">Variables detected: ${vars.map(v=>`<strong>{{${v}}}</strong>`).join(', ')} — will be replaced per recipient.</div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// STEP 4: REVIEW & SEND
+// ══════════════════════════════════════════════════════════
+function buildReview() {
+  const subject = document.getElementById('e-subject').value;
+  const bodyText = getEmailText().trim();
+  const attachment = document.getElementById('e-attachment').files[0];
+  if (!subject || !bodyText) { goStep(3); showAlert('step-alert','Please fill in the subject and body.'); return; }
+  if (!selectedSMTP) { goStep(1); showAlert('step-alert','Please set up SMTP first.'); return; }
+  if (!selectedRList) { goStep(2); showAlert('step-alert','Please upload a recipient list first.'); return; }
+  document.getElementById('review-card').innerHTML = `
+    <h2 style="margin-bottom:18px">Review before sending</h2>
+    <table style="font-size:14px">
+      <tr><td style="color:#64748b;padding:8px 0;width:130px;vertical-align:top">From</td><td>${selectedSMTP.username}</td></tr>
+      <tr><td style="color:#64748b;padding:8px 0;vertical-align:top">Recipients</td><td><strong>${selectedRList.valid_count}</strong> contacts from <em>${selectedRList.name}</em></td></tr>
+      <tr><td style="color:#64748b;padding:8px 0;vertical-align:top">Subject</td><td>${subject}</td></tr>
+      ${attachment ? `<tr><td style="color:#64748b;padding:8px 0;vertical-align:top">Attachment</td><td>📎 ${attachment.name}</td></tr>` : ''}
+      <tr><td style="color:#64748b;padding:8px 0;vertical-align:top">Preview</td><td style="color:#94a3b8;font-size:13px;line-height:1.6">${bodyText.slice(0,250)}${bodyText.length>250?'…':''}</td></tr>
+    </table>`;
+}
+
+async function sendNow() {
+  const subject = document.getElementById('e-subject').value;
+  const body = getEmailBody();
+  const attachment = document.getElementById('e-attachment').files[0];
+  const btn = document.getElementById('btn-send');
+  btn.disabled = true;
+  document.getElementById('send-progress').style.display = 'block';
+  document.getElementById('send-status-text').textContent = 'Creating campaign...';
+  document.getElementById('send-progress-fill').style.width = '10%';
+
+  // 1. Create template
+  const tmplRes = await apiFetch('POST', '/api/templates/', {
+    name: `Campaign – ${new Date().toLocaleDateString()}`,
+    subject, body,
+  });
+  if (!tmplRes?.id) {
+    showAlert('step-alert', tmplRes?.error || 'Failed to create template.');
+    btn.disabled = false; document.getElementById('send-progress').style.display = 'none'; return;
+  }
+
+  // 2. Create campaign
+  document.getElementById('send-progress-fill').style.width = '40%';
+  let campRes;
+  if (attachment) {
+    const fd = new FormData();
+    fd.append('name', `Campaign ${new Date().toLocaleString()}`);
+    fd.append('subject', subject);
+    fd.append('template', tmplRes.id);
+    fd.append('recipient_list', selectedRList.id);
+    fd.append('smtp_config', selectedSMTP.id);
+    fd.append('enable_ai_personalization', 'false');
+    fd.append('attachment', attachment);
+    campRes = await apiFetch('POST', '/api/campaigns/', fd, true);
+  } else {
+    campRes = await apiFetch('POST', '/api/campaigns/', {
+      name: `Campaign ${new Date().toLocaleString()}`,
+      subject, template: tmplRes.id,
+      recipient_list: selectedRList.id,
+      smtp_config: selectedSMTP.id,
+      enable_ai_personalization: false,
+    });
+  }
+  if (!campRes?.id) {
+    showAlert('step-alert', campRes?.error || 'Failed to create campaign.');
+    btn.disabled = false; document.getElementById('send-progress').style.display = 'none'; return;
+  }
+
+  // 3. Activate
+  document.getElementById('send-status-text').textContent = 'Queuing emails...';
+  document.getElementById('send-progress-fill').style.width = '70%';
+  const activateRes = await apiFetch('POST', `/api/campaigns/${campRes.id}/activate/`);
+  if (activateRes?.status === 'queued' || activateRes?.status === 'completed') {
+    document.getElementById('send-progress-fill').style.width = '100%';
+    document.getElementById('send-status-text').textContent = '✅ Campaign queued! Emails are being sent.';
+    document.getElementById('send-progress-label').textContent = `${selectedRList.valid_count} emails dispatched to queue`;
+    btn.textContent = '✅ Sent!';
+    setTimeout(() => {
+      quill.setContents([]);
+      document.getElementById('e-subject').value = '';
+      document.getElementById('e-attachment').value = '';
+      document.getElementById('attachment-preview').textContent = '';
+      document.getElementById('variable-hint').innerHTML = '';
+      btn.disabled = false; btn.textContent = '🚀 Send Campaign';
+      document.getElementById('send-progress').style.display = 'none';
+      goStep(1);
+    }, 3500);
+  } else {
+    showAlert('step-alert', activateRes?.error || 'Activation failed.');
+    btn.disabled = false; document.getElementById('send-progress').style.display = 'none';
+  }
+}
+
+// Attachment preview
+document.addEventListener('DOMContentLoaded', () => {
+  const att = document.getElementById('e-attachment');
+  if (att) att.addEventListener('change', function() {
+    const f = this.files[0];
+    document.getElementById('attachment-preview').textContent = f ? `📎 ${f.name} (${(f.size/1024).toFixed(1)} KB)` : '';
+  });
+});
+</script>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CAMPAIGNS PAGE
+// ══════════════════════════════════════════════════════════
+async function loadCampaignsPage() {
+  const el = document.getElementById('campaigns-content');
+  el.innerHTML = '<div class="card" style="text-align:center;padding:24px"><div class="spinner" style="margin:0 auto"></div></div>';
+  const res = await apiFetch('GET', '/api/campaigns/');
+  const list = res?.results || res || [];
+  if (!Array.isArray(list) || !list.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🚀</div><p>No campaigns yet.</p><button class="btn btn-primary" onclick="nav('send')">Send your first campaign</button></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Name</th><th>Status</th><th>Recipients</th><th>Sent</th><th>Failed</th><th>Date</th><th></th></tr></thead>
+    <tbody>${list.map(c => `<tr>
+      <td><button class="btn-link" style="font-weight:600;font-size:14px" onclick="openCampaignDetail('${c.id}')">${c.name}</button></td>
+      <td>${badge(c.status)}</td>
+      <td>${c.total_recipients||0}</td>
+      <td style="color:#34d399">${c.sent_count||0}</td>
+      <td style="color:#f87171">${c.failed_count||0}</td>
+      <td style="color:#64748b">${fmtDate(c.created_at)}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="openCampaignDetail('${c.id}')">View</button>
+        ${c.status!=='sending' ? `<button class="btn btn-danger btn-sm" onclick="deleteCampaign('${c.id}')">Delete</button>` : ''}
+      </td>
+    </tr>`).join('')}
+    </tbody></table></div></div>`;
+}
+
+async function deleteCampaign(id) {
+  if (!confirm('Delete this campaign? This cannot be undone.')) return;
+  await apiFetch('DELETE', `/api/campaigns/${id}/`);
+  loadCampaignsPage();
+}
+
+async function showAnalytics(id) {
+  openModal('<div style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto"></div></div>');
+  const res = await apiFetch('GET', `/api/campaigns/${id}/analytics/`);
+  const openColor = res.open_rate >= 30 ? '#34d399' : res.open_rate >= 15 ? '#fbbf24' : '#f87171';
+  document.getElementById('modal-body').innerHTML = `
+    <h2 style="margin-bottom:20px">📊 Campaign Analytics</h2>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:18px">
+      <div class="stat"><div class="stat-val">${res.total_sent||0}</div><div class="stat-label">Sent</div></div>
+      <div class="stat"><div class="stat-val" style="color:#34d399">${res.total_opened||0}</div><div class="stat-label">Opened</div></div>
+      <div class="stat"><div class="stat-val" style="color:#60a5fa">${res.total_clicked||0}</div><div class="stat-label">Clicked</div></div>
+      <div class="stat"><div class="stat-val" style="color:#f87171">${res.total_bounced||0}</div><div class="stat-label">Bounced</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      <div class="card" style="text-align:center;padding:14px">
+        <div style="font-size:24px;font-weight:700;color:${openColor}">${(res.open_rate||0).toFixed(1)}%</div>
+        <div style="color:#64748b;font-size:12px;margin-top:4px">Open Rate</div>
+      </div>
+      <div class="card" style="text-align:center;padding:14px">
+        <div style="font-size:24px;font-weight:700;color:#60a5fa">${(res.click_rate||0).toFixed(1)}%</div>
+        <div style="color:#64748b;font-size:12px;margin-top:4px">Click Rate</div>
+      </div>
+      <div class="card" style="text-align:center;padding:14px">
+        <div style="font-size:24px;font-weight:700;color:#f87171">${(res.bounce_rate||0).toFixed(1)}%</div>
+        <div style="color:#64748b;font-size:12px;margin-top:4px">Bounce Rate</div>
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// RECIPIENTS PAGE
+// ══════════════════════════════════════════════════════════
+async function loadRecipientsPage() {
+  const el = document.getElementById('recipients-content');
+  el.innerHTML = '<div class="card" style="text-align:center;padding:24px"><div class="spinner" style="margin:0 auto"></div></div>';
+  const res = await apiFetch('GET', '/api/recipient-lists/');
+  const list = res?.results || res || [];
+  if (!Array.isArray(list) || !list.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">👥</div><p>No recipient lists yet.</p><button class="btn btn-primary" onclick="nav('send');goStep(2)">Upload your first list</button></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Name</th><th>Valid</th><th>Invalid</th><th>Status</th><th>Uploaded</th><th></th></tr></thead>
+    <tbody>${list.map(r => `<tr>
+      <td style="font-weight:500;color:#f1f5f9">${r.name}</td>
+      <td style="color:#34d399">${r.valid_count||0}</td>
+      <td style="color:#f87171">${r.invalid_count||0}</td>
+      <td>${badge(r.status||'completed')}</td>
+      <td style="color:#64748b">${fmtDate(r.created_at)}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteRList('${r.id}')">Delete</button></td>
+    </tr>`).join('')}
+    </tbody></table></div></div>`;
+}
+
+async function deleteRList(id) {
+  if (!confirm('Delete this recipient list?')) return;
+  await apiFetch('DELETE', `/api/recipient-lists/${id}/`);
+  loadRecipientsPage();
+}
+
+// ══════════════════════════════════════════════════════════
+// SMTP PAGE
+// ══════════════════════════════════════════════════════════
+async function loadSMTPPage() {
+  const el = document.getElementById('smtp-content');
+  el.innerHTML = '<div class="card" style="text-align:center;padding:24px"><div class="spinner" style="margin:0 auto"></div></div>';
+  const res = await apiFetch('GET', '/api/smtp-configs/');
+  const list = res?.results || res || [];
+  if (!Array.isArray(list) || !list.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">⚙️</div><p>No SMTP configs yet.</p><button class="btn btn-primary" onclick="nav('send')">Add one in Quick Send</button></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Name</th><th>Provider</th><th>Host</th><th>Username</th><th></th></tr></thead>
+    <tbody>${list.map(s => `<tr>
+      <td style="font-weight:500;color:#f1f5f9">${s.name}</td>
+      <td style="text-transform:capitalize">${s.provider}</td>
+      <td style="color:#64748b">${s.host}:${s.port}</td>
+      <td>${s.username}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="testSMTP('${s.id}')">Test</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteSMTP('${s.id}')">Delete</button>
+      </td>
+    </tr>`).join('')}
+    </tbody></table></div></div>`;
+}
+
+async function testSMTP(id) {
+  openModal('<div style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto"></div><p style="margin-top:12px;color:#64748b;font-size:14px">Testing connection...</p></div>');
+  const res = await apiFetch('POST', `/api/smtp-configs/${id}/test/`);
+  document.getElementById('modal-body').innerHTML = `
+    <h2 style="margin-bottom:14px">SMTP Test Result</h2>
+    <div class="alert alert-${res?.success ? 'success' : 'error'}">${res?.message || res?.error || JSON.stringify(res)}</div>`;
+}
+
+async function deleteSMTP(id) {
+  if (!confirm('Delete this SMTP config?')) return;
+  await apiFetch('DELETE', `/api/smtp-configs/${id}/`);
+  loadSMTPPage();
+}
+
+// ══════════════════════════════════════════════════════════
+// CAMPAIGN DETAIL + LIVE PROGRESS
+// ══════════════════════════════════════════════════════════
+let progressInterval = null;
+
+async function openCampaignDetail(id) {
+  // Stop any existing polling
+  if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+
+  nav('detail');
+  document.getElementById('detail-content').innerHTML =
+    '<div class="card" style="text-align:center;padding:32px"><div class="spinner" style="margin:0 auto"></div></div>';
+
+  const [camp, analytics] = await Promise.all([
+    apiFetch('GET', `/api/campaigns/${id}/`),
+    apiFetch('GET', `/api/campaigns/${id}/analytics/`),
+  ]);
+
+  if (camp?.error) {
+    document.getElementById('detail-content').innerHTML =
+      `<div class="alert alert-error">Failed to load campaign: ${camp.error}</div>`;
+    return;
+  }
+
+  document.getElementById('detail-name').textContent = camp.name;
+  document.getElementById('detail-subtitle').textContent =
+    `Created ${fmtDate(camp.created_at)} · ${badge(camp.status)}`;
+  document.getElementById('detail-actions').innerHTML =
+    camp.status !== 'sending'
+      ? `<button class="btn btn-danger btn-sm" onclick="deleteCampaign('${id}');nav('campaigns')">Delete</button>`
+      : '';
+
+  renderDetailContent(camp, analytics);
+
+  // Poll progress if actively sending
+  if (camp.status === 'sending' || camp.status === 'queued') {
+    progressInterval = setInterval(async () => {
+      const prog = await apiFetch('GET', `/api/campaigns/${id}/progress/`);
+      updateProgressUI(prog);
+      if (prog?.status === 'completed' || prog?.status === 'failed') {
+        clearInterval(progressInterval); progressInterval = null;
+        // Refresh analytics
+        const fresh = await apiFetch('GET', `/api/campaigns/${id}/analytics/`);
+        renderAnalyticsCards(fresh);
+      }
+    }, 3000);
+  }
+}
+
+function renderDetailContent(camp, analytics) {
+  const total = camp.total_recipients || 0;
+  const sent = camp.sent_count || 0;
+  const failed = camp.failed_count || 0;
+  const pending = Math.max(0, total - sent - failed);
+  const pct = total > 0 ? Math.round(((sent + failed) / total) * 100) : 0;
+  const isSending = camp.status === 'sending' || camp.status === 'queued';
+
+  document.getElementById('detail-content').innerHTML = `
+    ${isSending ? `
+    <div class="card" id="progress-card">
+      <h2 style="margin-bottom:16px">📤 Sending Progress</h2>
+      <div style="display:flex;justify-content:space-between;font-size:13px;color:#64748b;margin-bottom:8px">
+        <span id="prog-label">${sent} of ${total} sent</span>
+        <span id="prog-pct">${pct}%</span>
+      </div>
+      <div class="progress-bar" style="height:10px">
+        <div class="progress-fill" id="prog-fill" style="width:${pct}%"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px">
+        <div class="stat"><div class="stat-val" style="color:#34d399" id="prog-sent">${sent}</div><div class="stat-label">Sent</div></div>
+        <div class="stat"><div class="stat-val" style="color:#f87171" id="prog-failed">${failed}</div><div class="stat-label">Failed</div></div>
+        <div class="stat"><div class="stat-val" style="color:#fbbf24" id="prog-pending">${pending}</div><div class="stat-label">Pending</div></div>
+      </div>
+    </div>` : ''}
+
+    <div id="analytics-cards">
+      ${renderAnalyticsHTML(analytics)}
+    </div>
+
+    <div class="card">
+      <h2 style="margin-bottom:16px">Campaign Info</h2>
+      <table style="font-size:14px">
+        <tr><td style="color:#64748b;padding:8px 0;width:140px">Subject</td><td>${camp.subject || '—'}</td></tr>
+        <tr><td style="color:#64748b;padding:8px 0">Status</td><td>${badge(camp.status)}</td></tr>
+        <tr><td style="color:#64748b;padding:8px 0">Recipients</td><td>${total}</td></tr>
+        <tr><td style="color:#64748b;padding:8px 0">Created</td><td>${fmtDate(camp.created_at)}</td></tr>
+        ${camp.started_at ? `<tr><td style="color:#64748b;padding:8px 0">Started</td><td>${fmtDate(camp.started_at)}</td></tr>` : ''}
+        ${camp.completed_at ? `<tr><td style="color:#64748b;padding:8px 0">Completed</td><td>${fmtDate(camp.completed_at)}</td></tr>` : ''}
+      </table>
+    </div>`;
+}
+
+function renderAnalyticsHTML(a) {
+  if (!a || a.error) return '';
+  const openColor = (a.open_rate||0) >= 30 ? '#34d399' : (a.open_rate||0) >= 15 ? '#fbbf24' : '#f87171';
+  return `
+    <div class="stat-grid" style="margin-bottom:0">
+      <div class="stat"><div class="stat-val">${a.total_sent||0}</div><div class="stat-label">Sent</div></div>
+      <div class="stat"><div class="stat-val" style="color:#34d399">${a.total_opened||0}</div><div class="stat-label">Opened</div></div>
+      <div class="stat"><div class="stat-val" style="color:#60a5fa">${a.total_clicked||0}</div><div class="stat-label">Clicked</div></div>
+      <div class="stat"><div class="stat-val" style="color:#f87171">${a.total_bounced||0}</div><div class="stat-label">Bounced</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px;margin-bottom:16px">
+      <div class="card" style="text-align:center;padding:14px">
+        <div style="font-size:24px;font-weight:700;color:${openColor}">${(a.open_rate||0).toFixed(1)}%</div>
+        <div style="color:#64748b;font-size:12px;margin-top:4px">Open Rate</div>
+      </div>
+      <div class="card" style="text-align:center;padding:14px">
+        <div style="font-size:24px;font-weight:700;color:#60a5fa">${(a.click_rate||0).toFixed(1)}%</div>
+        <div style="color:#64748b;font-size:12px;margin-top:4px">Click Rate</div>
+      </div>
+      <div class="card" style="text-align:center;padding:14px">
+        <div style="font-size:24px;font-weight:700;color:#f87171">${(a.bounce_rate||0).toFixed(1)}%</div>
+        <div style="color:#64748b;font-size:12px;margin-top:4px">Bounce Rate</div>
+      </div>
+    </div>`;
+}
+
+function renderAnalyticsCards(a) {
+  const el = document.getElementById('analytics-cards');
+  if (el) el.innerHTML = renderAnalyticsHTML(a);
+}
+
+function updateProgressUI(prog) {
+  if (!prog) return;
+  const total = prog.total || 0;
+  const sent = prog.sent || 0;
+  const failed = prog.failed || 0;
+  const pending = prog.pending || 0;
+  const pct = prog.progress_percentage || 0;
+  const fill = document.getElementById('prog-fill');
+  const label = document.getElementById('prog-label');
+  const pctEl = document.getElementById('prog-pct');
+  if (fill) fill.style.width = pct + '%';
+  if (label) label.textContent = `${sent} of ${total} sent`;
+  if (pctEl) pctEl.textContent = Math.round(pct) + '%';
+  const sentEl = document.getElementById('prog-sent');
+  const failEl = document.getElementById('prog-failed');
+  const pendEl = document.getElementById('prog-pending');
+  if (sentEl) sentEl.textContent = sent;
+  if (failEl) failEl.textContent = failed;
+  if (pendEl) pendEl.textContent = pending;
+}
+
+// Handle #register anchor from landing page
+if (location.hash === '#register') {
+  switchAuthTab('register');
+}
+
+// ══════════════════════════════════════════════════════════
+// THEME TOGGLE (dark / light)
+// ══════════════════════════════════════════════════════════
+let isLight = localStorage.getItem('theme') === 'light';
+
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', isLight ? 'light' : 'dark');
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = isLight ? '🌙 Dark' : '☀ Light';
+}
+
+function toggleTheme() {
+  isLight = !isLight;
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  applyTheme();
+}
+
+applyTheme();
+
+// ══════════════════════════════════════════════════════════
+// PASSWORD SHOW/HIDE
+// ══════════════════════════════════════════════════════════
+function togglePw(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    btn.textContent = '👁';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// FORGOT / RESET PASSWORD
+// ══════════════════════════════════════════════════════════
+function showForgotPassword() {
+  ['form-login','form-register','form-reset'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  document.getElementById('form-forgot').style.display = 'block';
+  document.querySelector('.auth-tabs').style.display = 'none';
+  clearAlert('auth-alert');
+}
+
+async function doForgotPassword() {
+  const email = document.getElementById('fp-email').value.trim();
+  if (!email) { showAlert('auth-alert', 'Please enter your email.'); return; }
+  const btn = document.getElementById('btn-forgot');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Sending...';
+  const res = await apiFetch('POST', '/api/auth/forgot-password', {email});
+  btn.disabled = false; btn.textContent = 'Send Reset Link';
+  showAlert('auth-alert', res?.message || 'Reset link sent if that email exists.', 'success');
+}
+
+async function doResetPassword() {
+  const token = new URLSearchParams(location.search).get('reset_token');
+  const password = document.getElementById('rp-pass').value;
+  const confirm = document.getElementById('rp-pass2').value;
+  if (!password) { showAlert('auth-alert', 'Please enter a new password.'); return; }
+  if (password !== confirm) { showAlert('auth-alert', 'Passwords do not match.'); return; }
+  const btn = document.getElementById('btn-reset');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Resetting...';
+  const res = await apiFetch('POST', '/api/auth/reset-password', {token, password, password_confirm: confirm});
+  btn.disabled = false; btn.textContent = 'Set New Password';
+  if (res?.message) {
+    showAlert('auth-alert', res.message, 'success');
+    setTimeout(() => {
+      history.replaceState({}, '', location.pathname);
+      switchAuthTab('login');
+      document.querySelector('.auth-tabs').style.display = 'flex';
+    }, 2000);
+  } else {
+    showAlert('auth-alert', res?.error || 'Reset failed.');
+  }
+}
+
+// Show reset form if token in URL
+const resetToken = new URLSearchParams(location.search).get('reset_token');
+if (resetToken) {
+  ['form-login','form-register','form-forgot'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  document.getElementById('form-reset').style.display = 'block';
+  const tabs = document.querySelector('.auth-tabs');
+  if (tabs) tabs.style.display = 'none';
+}
+
+// ══════════════════════════════════════════════════════════
+// CHANGE PASSWORD (in-app modal)
+// ══════════════════════════════════════════════════════════
+function showChangePassword() {
+  openModal(`
+    <h2 style="margin-bottom:20px">🔑 Change Password</h2>
+    <div id="chpw-alert"></div>
+    <div class="form-group">
+      <label>Current Password</label>
+      <div class="pw-wrap">
+        <input id="cp-current" type="password" placeholder="Your current password"/>
+        <button type="button" class="pw-toggle" onclick="togglePw('cp-current',this)">👁</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>New Password</label>
+      <div class="pw-wrap">
+        <input id="cp-new" type="password" placeholder="Min 8 chars, uppercase, number"/>
+        <button type="button" class="pw-toggle" onclick="togglePw('cp-new',this)">👁</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Confirm New Password</label>
+      <div class="pw-wrap">
+        <input id="cp-confirm" type="password" placeholder="••••••••"/>
+        <button type="button" class="pw-toggle" onclick="togglePw('cp-confirm',this)">👁</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="doChangePassword()" id="btn-chpw">Update Password</button>
+  `);
+}
+
+async function doChangePassword() {
+  const current = document.getElementById('cp-current').value;
+  const newPass = document.getElementById('cp-new').value;
+  const confirm = document.getElementById('cp-confirm').value;
+  if (!current || !newPass) { showAlert('chpw-alert', 'All fields are required.'); return; }
+  if (newPass !== confirm) { showAlert('chpw-alert', 'New passwords do not match.'); return; }
+  const btn = document.getElementById('btn-chpw');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Updating...';
+  const res = await apiFetch('POST', '/api/auth/change-password', {
+    current_password: current, new_password: newPass, new_password_confirm: confirm
+  });
+  btn.disabled = false; btn.textContent = 'Update Password';
+  if (res?.message) {
+    showAlert('chpw-alert', res.message, 'success');
+    setTimeout(closeModal, 2000);
+  } else {
+    showAlert('chpw-alert', res?.error || 'Failed to update password.');
+  }
+}
+</script>
+</body>
+</html>
