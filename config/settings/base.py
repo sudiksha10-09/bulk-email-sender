@@ -225,6 +225,9 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Append trailing slash to URLs
+APPEND_SLASH = True
+
 # Custom user model
 AUTH_USER_MODEL = 'authentication.User'
 
