@@ -4,7 +4,26 @@ from .base import *
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
+# CRITICAL: Must be set in .env for production
 ALLOWED_HOSTS = get_env_list('ALLOWED_HOSTS', [])
+if not ALLOWED_HOSTS:
+    raise ValueError(
+        "ALLOWED_HOSTS must be set in .env for production. "
+        "Example: ALLOWED_HOSTS=example.com,www.example.com,192.168.1.100"
+    )
+
+# CSRF and CORS for production
+CSRF_TRUSTED_ORIGINS = get_env_list('CSRF_TRUSTED_ORIGINS', [
+    f'https://{host}' for host in ALLOWED_HOSTS
+] + [
+    f'http://{host}' for host in ALLOWED_HOSTS
+])
+
+CORS_ALLOWED_ORIGINS = get_env_list('CORS_ALLOWED_ORIGINS', [
+    f'https://{host}' for host in ALLOWED_HOSTS
+] + [
+    f'http://{host}' for host in ALLOWED_HOSTS
+])
 
 # Security settings for production
 SECURE_SSL_REDIRECT = True

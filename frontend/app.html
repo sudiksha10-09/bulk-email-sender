@@ -527,14 +527,41 @@ async function apiFetch(method, path, body=null, isForm=false) {
   const headers = {};
   if (!isForm) headers['Content-Type'] = 'application/json';
   if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
-  const opts = {method, headers};
+  const opts = {method, headers, timeout: 30000};
   if (body) opts.body = isForm ? body : JSON.stringify(body);
   try {
     const res = await fetch(API + path, opts);
+    
+    // Handle 204 No Content
     if (res.status === 204) return {};
-    if (res.status === 401) { doLogout(); return {error: 'Session expired. Please sign in again.'}; }
-    return res.json();
-  } catch(e) { return {error: 'Network error: ' + e.message}; }
+    
+    // Handle 401 Unauthorized
+    if (res.status === 401) { 
+      doLogout(); 
+      return {error: 'Session expired. Please sign in again.'}; 
+    }
+    
+    // Check content type
+    const contentType = res.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      // HTML error page returned (likely 500 error)
+      const text = await res.text();
+      console.error('Non-JSON response:', res.status, text.substring(0, 200));
+      return {error: `Server error (${res.status}). Please try again.`};
+    }
+    
+    const data = await res.json();
+    
+    // Handle error responses
+    if (!res.ok) {
+      return data || {error: `HTTP ${res.status}`};
+    }
+    
+    return data;
+  } catch(e) { 
+    console.error('API fetch error:', e);
+    return {error: 'Network error: ' + e.message}; 
+  }
 }
 
 function showAlert(id, msg, type='error') {
