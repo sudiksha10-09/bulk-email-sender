@@ -1,6 +1,7 @@
 """Utility functions for authentication app."""
 import secrets
 import logging
+from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -12,6 +13,23 @@ logger = logging.getLogger(__name__)
 def generate_verification_token():
     """Generate a secure random token for email verification."""
     return secrets.token_urlsafe(32)
+
+
+def get_system_user():
+    """Return a shared fallback user for deployments that do not use login."""
+    User = get_user_model()
+    system_email = getattr(settings, 'SYSTEM_USER_EMAIL', 'system@bulkmail.local')
+    user = User.objects.filter(email=system_email).first()
+    if user is None:
+        user = User.objects.create_user(
+            email=system_email,
+            password=None,
+            is_active=True,
+            is_staff=False,
+            is_superuser=False,
+            is_email_verified=True,
+        )
+    return user
 
 
 def send_verification_email(user, verification_token):

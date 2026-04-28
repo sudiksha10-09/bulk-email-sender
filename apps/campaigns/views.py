@@ -12,6 +12,7 @@ from apps.campaigns.serializers import (
     CampaignCreateSerializer,
     CampaignUpdateSerializer,
 )
+from apps.authentication.utils import get_system_user
 
 
 class CampaignViewSet(viewsets.ModelViewSet):
@@ -37,7 +38,7 @@ class CampaignViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         campaign = serializer.save(
-            user=None,  # No user required
+            user=get_system_user(),
             status='scheduled' if serializer.validated_data.get('scheduled_at') else 'draft',
             total_recipients=serializer.validated_data['recipient_list'].valid_count,
         )

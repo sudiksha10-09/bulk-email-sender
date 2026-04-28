@@ -11,6 +11,7 @@ from apps.recipients.serializers import (
     RecipientSerializer
 )
 from apps.recipients.utils import parse_csv_file, process_csv_recipients
+from apps.authentication.utils import get_system_user
 
 
 class RecipientListViewSet(viewsets.ModelViewSet):
@@ -60,7 +61,7 @@ class RecipientListViewSet(viewsets.ModelViewSet):
         
         # Create recipient list
         recipient_list = RecipientList.objects.create(
-            user=None,  # No user required
+            user=get_system_user(),
             name=name,
             csv_file_url=f"local://{csv_file.name}",  # For MVP, store filename; later use S3
             status='processing'

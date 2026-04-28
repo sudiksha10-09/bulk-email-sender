@@ -12,6 +12,7 @@ from apps.templates.serializers import (
     TemplatePreviewSerializer,
     render_template,
 )
+from apps.authentication.utils import get_system_user
 
 
 class TemplateViewSet(viewsets.ModelViewSet):
@@ -41,7 +42,7 @@ class TemplateViewSet(viewsets.ModelViewSet):
         if not serializer.is_valid():
             logger.error(f"Template validation errors: {serializer.errors}")
         serializer.is_valid(raise_exception=True)
-        template = serializer.save(user=None)  # No user required
+        template = serializer.save(user=get_system_user())
         return Response(TemplateSerializer(template).data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
@@ -86,7 +87,7 @@ class TemplateViewSet(viewsets.ModelViewSet):
         """
         original = self.get_object()
         duplicate = Template.objects.create(
-            user=None,  # No user required
+            user=get_system_user(),
             name=f"Copy of {original.name}",
             subject=original.subject,
             body=original.body,

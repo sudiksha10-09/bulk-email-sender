@@ -11,6 +11,7 @@ from apps.smtp_config.serializers import (
     SMTPConfigUpdateSerializer
 )
 from apps.smtp_config.utils import encrypt_password, decrypt_password, test_smtp_connection
+from apps.authentication.utils import get_system_user
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class SMTPConfigViewSet(viewsets.ModelViewSet):
             
             # Create SMTP config
             smtp_config = SMTPConfig.objects.create(
-                user=None,  # No user required
+                user=get_system_user(),
                 encrypted_password=encrypted_password,
                 **serializer.validated_data
             )
