@@ -18,7 +18,9 @@ class SMTPConfig(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='smtp_configs'
+        related_name='smtp_configs',
+        null=True,
+        blank=True
     )
     name = models.CharField(max_length=255)
     provider = models.CharField(max_length=50, choices=PROVIDER_CHOICES)

@@ -49,21 +49,15 @@ class CampaignCreateSerializer(serializers.ModelSerializer):
         }
 
     def validate_template(self, value):
-        request = self.context['request']
-        if value.user != request.user:
-            raise serializers.ValidationError("Template not found.")
+        # No user validation needed since auth is removed
         return value
 
     def validate_recipient_list(self, value):
-        request = self.context['request']
-        if value.user != request.user:
-            raise serializers.ValidationError("Recipient list not found.")
+        # No user validation needed since auth is removed
         return value
 
     def validate_smtp_config(self, value):
-        request = self.context['request']
-        if value.user != request.user:
-            raise serializers.ValidationError("SMTP config not found.")
+        # No user validation needed since auth is removed
         return value
 
 

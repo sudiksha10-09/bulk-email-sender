@@ -17,7 +17,9 @@ class RecipientList(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='recipient_lists'
+        related_name='recipient_lists',
+        null=True,
+        blank=True
     )
     name = models.CharField(max_length=255)
     total_count = models.IntegerField(default=0)
