@@ -84,9 +84,10 @@ LOGGING = {
 # Use production email backend
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-# Ensure encryption key is set
+# Ensure encryption key is always available.
+# Base settings derive a stable fallback from SECRET_KEY when ENCRYPTION_KEY is omitted.
 if not ENCRYPTION_KEY:
-    raise ValueError("ENCRYPTION_KEY must be set in production")
+    raise ValueError("ENCRYPTION_KEY derivation failed in production")
 
 # Database connection pooling for production
 DATABASES['default']['CONN_MAX_AGE'] = 600

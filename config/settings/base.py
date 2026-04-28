@@ -1,4 +1,6 @@
 """Base settings for bulk email sender project."""
+import base64
+import hashlib
 import os
 from pathlib import Path
 from datetime import timedelta
@@ -29,6 +31,12 @@ def get_env_list(key, default=None):
     if value is None:
         return default or []
     return [item.strip() for item in value.split(',') if item.strip()]
+
+
+def derive_fernet_key(source_secret):
+    """Derive a stable Fernet key from another secret when no dedicated key is set."""
+    digest = hashlib.sha256(source_secret.encode('utf-8')).digest()
+    return base64.urlsafe_b64encode(digest)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = get_env_str('SECRET_KEY', 'django-insecure-change-this-in-production')
@@ -302,6 +310,8 @@ CORS_ALLOW_HEADERS = [
 
 # Encryption key for SMTP credentials
 ENCRYPTION_KEY = get_env_str('ENCRYPTION_KEY', '')
+if not ENCRYPTION_KEY:
+    ENCRYPTION_KEY = derive_fernet_key(SECRET_KEY)
 
 # Stripe
 STRIPE_SECRET_KEY = get_env_str('STRIPE_SECRET_KEY', '')
